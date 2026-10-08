@@ -156,6 +156,7 @@ export interface RouteState {
     TossRewardAd.tsx
     form/
     home/
+    result/
   hooks/
   lib/
     TodayContext.tsx
@@ -209,7 +210,7 @@ export interface RouteState {
 - messages.ts: export function storeErrorMessage(error: StoreError): string
 - noticeFormValidation.ts: export interface NoticeFormValues; export type NoticeFieldKey = | 'name' | 'amount' | 'discountedAmount' | 'receivedDate' | 'opinionDeadline' | 'paymentDea; export type NoticeFormErrors = Partial<Record<NoticeFieldKey, string>>; export interface NoticeFormValidation; export const FIELD_ORDER: readonly NoticeFieldKey[] = [ 'name', 'amount', 'discountedAmount', 'receivedDate', 'opinionDe; export interface ValidateOptions; export function validateNoticeForm( values: NoticeFormValues, today: string, mode: 'create' | 'edit', options: ValidateO; export function toNoticeInput(values: NoticeFormValues): NoticeInput
 - noticeSchema.ts: export const CURRENT_SCHEMA_VERSION = 1; export const MAX_CORRUPT_BACKUPS = 3; export const STORAGE_LIMITS =; export interface NoticesData; export interface CorruptBackup; export type NoticeMigrations = Record<number, (data: unknown) => unknown>; export const MIGRATIONS: NoticeMigrations =
-- noticeSelectors.ts: export type OpenBadge = '마감 임박' | '기한 지남' | null; export interface OpenCard; export interface SavingsHero; export interface DecidedRow; export interface DecidedSection; export function buildOpenCards(notices: Notice[], today: string): OpenCard[]; export func...
+- noticeSelectors.ts: export type OpenBadge = '마감 임박' | '기한 지남' | null; export interface OpenCard; export interface SavingsHero; export interface DecidedRow; export interface DecidedSection; export function buildOpenCards(notices: Notice[], today: string): OpenCard[];...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -222,6 +223,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0007: 공용 차단 상태 화면(StatusState)과 렌더 오류 ErrorBoundary (files: src/components/StatusState.tsx, src/components/AppErrorBoundary.tsx, src/components/AppErrorBoundary.test.tsx)
 - 0008: 홈 컴포넌트 — 아끼는 돈 히어로·고지서 카드·미결정 목록·등록 동작 (files: src/components/home/SavingsHero.tsx, src/components/home/NoticeCard.tsx, src/components/home/OpenNoticesSection.tsx, src/components/home/useAddNotice.ts, src/components/home/OpenNoticesSection.test.tsx)
 - 0010: 고지서 입력 폼 — 검증 순수 함수·폼 상태·금액 필드·필드 묶음 (files: src/lib/noticeFormValidation.ts, src/lib/noticeFormValidation.test.ts, src/components/form/useNoticeFormState.ts, src/components/form/AmountField.tsx, src/components/form/NoticeFormFields.tsx)
+- 0012: 결과 무료 층 FreeTier(D-day 히어로·금액 비교)와 LegalNotice (files: src/components/result/FreeTier.tsx, src/components/result/LegalNotice.tsx, src/components/result/FreeTier.test.tsx)
 
 ## Available exports from existing files
 // src/App.tsx
