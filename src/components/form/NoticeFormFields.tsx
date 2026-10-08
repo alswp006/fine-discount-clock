@@ -87,6 +87,7 @@ export function NoticeFormFields({ formState, focusRequest }: NoticeFormFieldsPr
         onChange={onText('name')}
       />
       <Spacing size={8} />
+      <div style={{ padding: '0 24px' }}>
       <Chip kind="select" wrap>
         {KIND_OPTIONS.map((option) => (
           <ChipItem key={option.kind} selected={values.kind === option.kind} onClick={() => pickKind(option.kind)}>
@@ -94,6 +95,7 @@ export function NoticeFormFields({ formState, focusRequest }: NoticeFormFieldsPr
           </ChipItem>
         ))}
       </Chip>
+      </div>
       <Spacing size={8} />
       <AmountField
         ref={bind('amount')}

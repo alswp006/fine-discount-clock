@@ -19,6 +19,7 @@ export default function NoticeCreate() {
   return (
     <ScreenScaffold
       top={<Top title={<Top.TitleParagraph>고지서 등록</Top.TitleParagraph>} />}
+      flush
       bottom={<SubmitFooter label="저장" onClick={submit} />}
     >
       <NoticeFormFields formState={formState} focusRequest={focusRequest} />

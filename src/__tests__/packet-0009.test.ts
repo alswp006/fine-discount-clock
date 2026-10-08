@@ -82,7 +82,7 @@ describe("홈 페이지(S1) — 정리 섹션·빈/차단 상태·Toast·배너"
     loadMock.mockReturnValue(result());
     renderHome();
     expect(screen.getByText("받은 고지서를 등록해 보세요")).toBeInTheDocument();
-    expect(screen.getByText("감경 마감과 늦으면 붙는 금액을 계산해 드려요")).toBeInTheDocument();
+    expect(screen.getByText("감경 마감일과 늦으면 붙는 금액을 알려줘요")).toBeInTheDocument();
     expect(screen.queryAllByTestId("savings-hero")).toHaveLength(0);
     expect(screen.queryAllByTestId("ad-slot")).toHaveLength(0);
     expect(screen.getByText("과태료 감경시계")).toBeInTheDocument();
