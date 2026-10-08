@@ -157,6 +157,8 @@ export interface RouteState {
     contract.ts
     dateUtils.test.ts
     dateUtils.ts
+    engine/
+    fineEngine.ts
     fineRules.ts
     format.ts
     inputRules.test.ts
@@ -183,6 +185,8 @@ export interface RouteState {
 - analytics.ts: export type LogFields = Record<string, string | number | boolean | null>; export const DWELL_MS = 3000; export function fireAndForget(call: () => unknown): void; export function logScreen(page: string, extra?: LogFields): void; export function logClick(name: string, extra?: LogFields): void; export function logImpression(name: string, extra?: LogFields): void; export function useScreenLog(page: string): void
 - contract.ts: export type StatusVariant = 'notFound' | 'unavailable' | 'newer' | 'route404' | 'renderError'; export type countCharsFn = (s: string) => number; export type isValidYmdFn = (s: string) => boolean; export type addYearsFn = (ymd: string, years: number) => string; export type addDaysFn = (ymd: string, days: number) => string; export type todayYmdFn = () => string; export type formatWonFn = (amount: number) => string; export type formatDateDotFn = (ymd: string) => string
 - dateUtils.ts: export function ymdToDayNumber(ymd: string): number; export function addDays(ymd: string, days: number): string; export function diffDays(a: string, b: string): number; export function todayYmd(): string
+- engine/amounts.ts: export function calcFineComparison( notice: Pick<Notice, 'amount' | 'discountedAmount'>, ): FineComparison; export function calcFineScenario(amount: number, months: number): FineScenarioRow[]; export function calcPenaltyStages( notice: Pick<Notice, 'amount' | 'receivedDate' | 'paymentDeadline'>, ): PenaltyStages; export function calcDday(date: string, today: string): number
+- engine/deadlines.ts: export function getKeyDeadline(notice: Notice, today: string): KeyDeadline | null; export function getLastDeadline(notice: Notice, today: string): KeyDeadline | null; export function currentDueAmount(notice: Notice, today: string): number; export function potentialSaving(notice: Notice, today: string): number; export interface DecisionRecord; export function calcDecisionRecord( notice: Notice, status: Exclude<NoticeStatus, 'open'>, today: string, ): DecisionRec
 - fineRules.ts: export const FINE_RULES =; export const PENALTY_RULES =; export const INPUT_LIMITS =
 - format.ts: export function formatWon(amount: number): string; export function formatDateDot(ymd: string): string; export function formatDday(days: number): string
 - inputRules.ts: export type AmountParse = |; export function parseAmountInput(raw: string): AmountParse; export function countChars(s: string): number; export function isValidYmd(s: string): boolean; export function addYears(ymd: string, years: number): string
@@ -215,6 +219,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 엔티티·결과·RouteState 타입과 법령 기준 상수 (files: src/lib/types.ts, src/lib/fineRules.ts)
 - 0002: 입력 해석·날짜 산술·표시 포맷 순수 함수 (files: src/lib/inputRules.ts, src/lib/inputRules.test.ts, src/lib/dateUtils.ts, src/lib/dateUtils.test.ts, src/lib/format.ts)
+- 0003: 계산 엔진 — 감경·가산금·범칙금 단계·기준 기한 (files: src/lib/engine/amounts.ts, src/lib/engine/deadlines.ts, src/lib/fineEngine.ts, src/lib/engine/amounts.test.ts, src/lib/engine/deadlines.test.ts)
 
 ## Available exports from existing files
 // src/App.tsx
