@@ -14,6 +14,7 @@ const ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "home" },
   { path: "/notice/smoke", name: "notice-result" },
   { path: "/notice/smoke/edit", name: "notice-edit" },
+  { path: "/no/such/page", name: "not-found" },
   // { path: "/settings", name: "settings" },
 ];
 

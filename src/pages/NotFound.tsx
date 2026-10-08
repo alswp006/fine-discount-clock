@@ -1,14 +1,34 @@
-// @ai-factory:placeholder
-// 배선 선행(wiring-first)이 깐 자리 페이지다 — App.tsx에 `*`로 이미 연결돼 있다.
-// 이 화면을 담당하는 패킷은 이 파일을 **통째로 교체**하라(위 마커 주석 포함 — 마커가 남으면 산출물로 인정되지 않는다).
-import { PageShell } from "../components/PageShell";
+import { useCallback } from "react";
+import { Top } from "@toss/tds-mobile";
+import { useNavigate } from "react-router-dom";
+import { ScreenScaffold } from "@/components/ScreenScaffold";
+import StatusState from "@/components/StatusState";
+import { logClick } from "@/lib/analytics";
+
+const APP_NAME = "과태료 감경시계";
+
+/**
+ * 없는 경로 (*) — 어떤 Route에도 맞지 않을 때 (SPEC S5)
+ * 막다른 길이 되지 않도록 '홈으로' 하나만 두고, 잘못된 경로가
+ * 히스토리에 남지 않게 replace로 이동한다.
+ */
 export default function NotFound() {
+  const navigate = useNavigate();
+
+  const goHome = useCallback(() => {
+    logClick("not_found_home");
+    navigate("/", { replace: true });
+  }, [navigate]);
+
   return (
-    <PageShell>
-      <main data-testid="placeholder-not-found">
-        <h1>없는 경로</h1>
-        <p>이 화면은 준비 중이에요.</p>
-      </main>
-    </PageShell>
+    <ScreenScaffold
+      top={<Top title={<Top.TitleParagraph>{APP_NAME}</Top.TitleParagraph>} />}
+    >
+      <StatusState
+        variant="route404"
+        actionLabel="홈으로"
+        onAction={goHome}
+      />
+    </ScreenScaffold>
   );
 }
