@@ -189,8 +189,11 @@ export interface RouteState {
   pages/
     Home.test.tsx
     Home.tsx
+    NotFound.test.tsx
     NotFound.tsx
     NoticeCreate.tsx
+    NoticeEdit.test.tsx
+    NoticeEdit.tsx
     NoticeResult.test.tsx
     NoticeResult.tsx
     __TdsGallery.tsx
@@ -212,7 +215,7 @@ export interface RouteState {
 - messages.ts: export function storeErrorMessage(error: StoreError): string
 - noticeFormValidation.ts: export interface NoticeFormValues; export type NoticeFieldKey = | 'name' | 'amount' | 'discountedAmount' | 'receivedDate' | 'opinionDeadline' | 'paymentDea; export type NoticeFormErrors = Partial<Record<NoticeFieldKey, string>>; export interface NoticeFormValidation; export const FIELD_ORDER: readonly NoticeFieldKey[] = [ 'name', 'amount', 'discountedAmount', 'receivedDate', 'opinionDe; export interface ValidateOptions; export function validateNoticeForm( values: NoticeFormValues, today: string, mode: 'create' | 'edit', options: ValidateO; export function toNoticeInput(values: NoticeFormValues): NoticeInput
 - noticeSchema.ts: export const CURRENT_SCHEMA_VERSION = 1; export const MAX_CORRUPT_BACKUPS = 3; export const STORAGE_LIMITS =; export interface NoticesData; export interface CorruptBackup; export type NoticeMigrations = Record<number, (data: unknown) => unknown>; export const MIGRATIONS: NoticeMigrations =
-- noticeSelectors.ts: export type OpenBadge = '마감 임박' | '기한 지남' | null; export interface OpenCard; export interface SavingsHero; export interface DecidedRow; export interface DecidedSection; export function buildOpenCards(no...
+- noticeSelectors.ts: export type OpenBadge = '마감 임박' | '기한 지남' | null; export interface OpenCard; export interface SavingsHero; export interface DecidedRow; e...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -232,11 +235,10 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0009: 홈 페이지(S1) — 정리 섹션·빈/차단 상태·Toast·배너 (files: src/components/home/DecidedSection.tsx, src/pages/Home.tsx, src/pages/Home.test.tsx)
 - 0011: 신규 등록 페이지(S2) NoticeCreate와 제출 흐름 (files: src/components/form/useNoticeSubmit.ts, src/components/form/UnbackedSaveDialog.tsx, src/pages/NoticeCreate.tsx, src/pages/NoticeCreate.test.tsx)
 - 0016: 고지서 결과 페이지(S4) NoticeResult 조립 (files: src/components/result/ShareButton.tsx, src/pages/NoticeResult.tsx, src/pages/NoticeResult.test.tsx)
+- 0017: [부가] 고지서 수정 페이지(S3) NoticeEdit (files: src/components/form/RecordResetDialog.tsx, src/pages/NoticeEdit.tsx, src/pages/NoticeEdit.test.tsx)
+- 0018: [부가] 없는 경로 페이지(S5) NotFound (files: src/pages/NotFound.tsx, src/pages/NotFound.test.tsx)
 
 ## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
 // src/components/AdSlot.tsx
 export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
 
@@ -298,16 +300,17 @@ export interface FocusRequest {
 export function NoticeFormFields({ formState, focusRequest }: NoticeFormFieldsProps) {
 export default NoticeFormFields;
 
+// src/components/form/RecordResetDialog.tsx
+export function RecordResetDialog({ open, onConfirm, onClose }: RecordResetDialogProps) {
+export default RecordResetDialog;
+
 // src/components/form/UnbackedSaveDialog.tsx
 export function UnbackedSaveDialog({ open, onConfirm, onClose }: UnbackedSaveDialogProps) {
 export default UnbackedSaveDialog;
 
 // src/components/form/useNoticeFormState.ts
 export interface NoticeFormState {
-export function useNoticeFormState(initial?: NoticeInput): NoticeFormState {
-
-// src/components/form/useNoticeSubmit.ts
-export fun
+export f
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 
