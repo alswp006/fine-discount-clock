@@ -4,7 +4,7 @@ interface RecordResetDialogProps {
   open: boolean;
   /** '바꾸기' — 납부 기록을 지우고 open으로 되돌려 저장한다 */
   onConfirm: () => void;
-  /** '닫기' · 딤 클릭 · 뒤로가기 — 저장하지 않는다 */
+  /** '취소' · 딤 클릭 · 뒤로가기 — 저장하지 않는다 */
   onClose: () => void;
 }
 
@@ -20,7 +20,7 @@ export function RecordResetDialog({ open, onConfirm, onClose }: RecordResetDialo
           납부·의견제출 기록과 아낀 금액이 지워지고 처리 전 상태로 돌아가요.
         </ConfirmDialog.Description>
       }
-      cancelButton={<ConfirmDialog.CancelButton onClick={onClose}>닫기</ConfirmDialog.CancelButton>}
+      cancelButton={<ConfirmDialog.CancelButton onClick={onClose}>취소</ConfirmDialog.CancelButton>}
       confirmButton={<ConfirmDialog.ConfirmButton onClick={onConfirm}>바꾸기</ConfirmDialog.ConfirmButton>}
     />
   );

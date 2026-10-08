@@ -153,7 +153,7 @@ describe("납부·결정 기록 BottomSheet와 기록 동작 훅", () => {
     expect(spies.click).toHaveBeenCalledTimes(1);
     expect(spies.click).toHaveBeenCalledWith("mark_paid_early");
     expect(spies.review).toHaveBeenCalledTimes(1);
-    expect(spies.toast).toHaveBeenCalledWith("납부를 기록했어요");
+    expect(spies.toast).toHaveBeenCalledWith("감경 납부를 기록했어요. 8,000원 아꼈어요");
   });
 
   it("AC-2[P0]: 감경 마감 후·납부기한 전(10-21) 과태료는 첫 옵션이 '기한 안에 40,000원 납부했어요'이고 savedAmount는 1200이다", () => {

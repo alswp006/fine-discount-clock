@@ -10,7 +10,6 @@ import { fireEvent, screen, within } from "@testing-library/react";
 import { mockAll, mockNavigate, mockOpenToast } from "@/__tests__/__helpers__/mocks";
 import { renderWithRouter } from "@/__tests__/__helpers__/test-utils";
 import { loadNotices } from "@/lib/noticeStore";
-import { storeErrorMessage } from "@/lib/messages";
 import { DeleteNoticeButton } from "@/components/result/DeleteNoticeButton";
 import type { Notice } from "@/lib/types";
 
@@ -62,18 +61,17 @@ describe("[부가] 고지서 삭제 버튼과 확인 다이얼로그", () => {
     expect(within(dialog()).getByRole("button", { name: "삭제" })).toBeInTheDocument();
   });
 
-  it("AC-1[P0]: 다이얼로그의 버튼은 '닫기'와 '삭제' 순서(왼쪽이 닫기)다", () => {
+  it("AC-1[P0]: 다이얼로그의 버튼은 '취소'와 '삭제' 순서(왼쪽이 취소)다", () => {
     openDialog();
     const names = within(dialog())
       .getAllByRole("button")
       .map((b) => b.textContent);
-    expect(names).toEqual(["닫기", "삭제"]);
-    expect(within(dialog()).queryByRole("button", { name: "취소" })).toBeNull();
+    expect(names).toEqual(["취소", "삭제"]);
   });
 
-  it("AC-2[P0]: '닫기'를 누르면 dialog가 닫히고 삭제는 일어나지 않으며 이동도 없다", () => {
+  it("AC-2[P0]: '취소'를 누르면 dialog가 닫히고 삭제는 일어나지 않으며 이동도 없다", () => {
     openDialog();
-    fireEvent.click(within(dialog()).getByRole("button", { name: "닫기" }));
+    fireEvent.click(within(dialog()).getByRole("button", { name: "취소" }));
     expect(screen.queryByRole("alertdialog")).toBeNull();
     expect(loadNotices().notices.map((n) => n.id)).toEqual(["n1"]);
     expect(mockNavigate).toHaveBeenCalledTimes(0);
@@ -97,7 +95,7 @@ describe("[부가] 고지서 삭제 버튼과 확인 다이얼로그", () => {
     fireEvent.click(within(dialog()).getByRole("button", { name: "삭제" }));
     expect(mockNavigate).toHaveBeenCalledTimes(0);
     expect(mockOpenToast).toHaveBeenCalledTimes(1);
-    expect(mockOpenToast).toHaveBeenCalledWith(storeErrorMessage("quota"));
+    expect(mockOpenToast).toHaveBeenCalledWith("저장 공간이 부족해 삭제하지 못했어요");
     expect(loadNotices().notices.map((n) => n.id)).toEqual(["n1"]);
     expect(errorSpy).toHaveBeenCalledTimes(0);
   });
@@ -110,7 +108,7 @@ describe("[부가] 고지서 삭제 버튼과 확인 다이얼로그", () => {
     fireEvent.click(within(dialog()).getByRole("button", { name: "삭제" }));
     expect(mockNavigate).toHaveBeenCalledTimes(0);
     expect(mockOpenToast).toHaveBeenCalledTimes(1);
-    expect(mockOpenToast).toHaveBeenCalledWith(storeErrorMessage("unavailable"));
+    expect(mockOpenToast).toHaveBeenCalledWith("삭제하지 못했어요. 토스 앱을 다시 실행한 뒤 시도해 주세요");
     expect(errorSpy).toHaveBeenCalledTimes(0);
   });
 });

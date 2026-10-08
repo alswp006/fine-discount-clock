@@ -38,11 +38,11 @@ describe("DeleteNoticeButton", () => {
   it("왼쪽 버튼은 '닫기', 오른쪽은 '삭제'이고 '취소'는 없다", () => {
     const dialog = screen.getByRole("alertdialog");
     expect(dialog).toHaveTextContent("'강남 주정차' 고지서를 삭제할까요?");
-    expect(within(dialog).getAllByRole("button").map((b) => b.textContent)).toEqual(["닫기", "삭제"]);
+    expect(within(dialog).getAllByRole("button").map((b) => b.textContent)).toEqual(["취소", "삭제"]);
   });
 
   it("'닫기'는 삭제하지 않고 이동도 하지 않는다", () => {
-    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "닫기" }));
+    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "취소" }));
     expect(screen.queryByRole("alertdialog")).toBeNull();
     expect(loadNotices().notices).toHaveLength(1);
     expect(mockNavigate).not.toHaveBeenCalled();

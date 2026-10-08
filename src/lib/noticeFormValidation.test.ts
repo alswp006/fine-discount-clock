@@ -46,7 +46,7 @@ describe('validateNoticeForm', () => {
   });
 
   it('받은 날: 오늘 이후·5년 경계·달력 오류', () => {
-    expect(check({ receivedDate: '2026-10-10' }).errors.receivedDate).toBe('받은 날은 오늘이나 그 전 날짜로 입력해주세요');
+    expect(check({ receivedDate: '2026-10-10' }).errors.receivedDate).toBe('받은 날은 오늘 이후일 수 없어요');
     expect(check({ receivedDate: '2026-02-30' }).errors.receivedDate).toBe('올바른 날짜를 입력해주세요');
     const old = { opinionDeadline: '2021-10-20', paymentDeadline: '2021-11-30' };
     expect(check({ ...old, receivedDate: '2021-10-08' }).errors.receivedDate).toBe('받은 날은 최근 5년 안의 날짜로 입력해주세요');

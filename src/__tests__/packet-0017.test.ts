@@ -108,14 +108,14 @@ describe("고지서 수정 페이지(S3) NoticeEdit", () => {
     });
   });
 
-  it("AC-3[P0]: paid_early 고지서에서 금액을 바꾸면 다이얼로그가 뜨고 '바꾸기'로 open 초기화 후 저장, '닫기'는 저장 안 함", () => {
+  it("AC-3[P0]: paid_early 고지서에서 금액을 바꾸면 다이얼로그가 뜨고 '바꾸기'로 open 초기화 후 저장, '취소'는 저장 안 함", () => {
     seed({ ...base, status: "paid_early", paidAmount: 30000, savedAmount: 10000, decidedAt: "2026-10-08" });
     render();
     change(/원래 금액/, "50000");
     tapSave();
     expect(screen.getByText(RESET_TITLE)).toBeInTheDocument();
-    const buttons = screen.getAllByRole("button").filter((b) => ["닫기", "바꾸기"].includes(b.textContent ?? ""));
-    expect(buttons.map((b) => b.textContent)).toEqual(["닫기", "바꾸기"]);
+    const buttons = screen.getAllByRole("button").filter((b) => ["취소", "바꾸기"].includes(b.textContent ?? ""));
+    expect(buttons.map((b) => b.textContent)).toEqual(["취소", "바꾸기"]);
     expect(stored()[0].amount).toBe(40000);
 
     fireEvent.click(buttons[0]);

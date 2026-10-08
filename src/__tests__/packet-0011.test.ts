@@ -175,7 +175,7 @@ describe("신규 등록 페이지(S2) NoticeCreate와 제출 흐름", () => {
     expect(field("고지서 이름").value).toBe("강남 주정차");
   });
 
-  it("AC-3[P0]: 'unbacked'이면 확인 다이얼로그가 뜨고(왼쪽 '닫기') 확인하면 discardCorrupt:true로 다시 저장한다", () => {
+  it("AC-3[P0]: 'unbacked'이면 확인 다이얼로그가 뜨고(왼쪽 '취소') 확인하면 discardCorrupt:true로 다시 저장한다", () => {
     localStorage.setItem(KEY, "{bad");
     render();
     fillValid();
@@ -185,7 +185,7 @@ describe("신규 등록 페이지(S2) NoticeCreate와 제출 흐름", () => {
     const dialog = screen.getByRole("alertdialog");
     const buttons = within(dialog).getAllByRole("button");
     expect(buttons).toHaveLength(2);
-    expect(buttons[0]).toHaveTextContent("닫기");
+    expect(buttons[0]).toHaveTextContent("취소");
     expect(mockNavigate).not.toHaveBeenCalled();
     expect(mockOpenToast).not.toHaveBeenCalled();
 
@@ -200,7 +200,7 @@ describe("신규 등록 페이지(S2) NoticeCreate와 제출 흐름", () => {
     expect(mockLogClick).toHaveBeenCalledWith("notice_save");
   });
 
-  it("AC-3[P0]: '닫기'를 누르면 저장하지 않고 입력값을 유지하며 logClick은 1회뿐이다", () => {
+  it("AC-3[P0]: '취소'를 누르면 저장하지 않고 입력값을 유지하며 logClick은 1회뿐이다", () => {
     localStorage.setItem(KEY, "{bad");
     render();
     fillValid();

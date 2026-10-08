@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useToast } from '@toss/tds-mobile';
 import { generateHapticFeedback } from '@apps-in-toss/web-framework';
 import { logClick } from '@/lib/analytics';
-import { currentDueAmount, getKeyDeadline, getLastDeadline } from '@/lib/fineEngine';
+import { currentDueAmount, getKeyDeadline, getLastDeadline, potentialSaving } from '@/lib/fineEngine';
 import { formatWon } from '@/lib/format';
 import { updateStatus } from '@/lib/noticeStore';
 import { requestReviewOnce } from '@/lib/review';
@@ -19,14 +19,16 @@ export interface RecordOption {
   doneMessage: string;
 }
 
+const RESTART_HINT = '기록하지 못했어요. 토스 앱을 다시 실행한 뒤 시도해 주세요';
+
 const RECORD_ERROR_MESSAGES: Record<StoreError, string> = {
   quota: '저장 공간이 부족해 기록하지 못했어요',
   unavailable: '저장 공간에 접근할 수 없어 기록하지 못했어요',
-  newer_version: '새 버전 앱에서 저장한 데이터가 있어 기록하지 못했어요',
+  newer_version: RESTART_HINT,
   not_found: '고지서를 찾을 수 없어 기록하지 못했어요',
   limit: '기록하지 못했어요. 잠시 뒤 다시 시도해 주세요',
   unbacked: '기록하지 못했어요. 잠시 뒤 다시 시도해 주세요',
-  invalid: '기록하지 못했어요. 잠시 뒤 다시 시도해 주세요',
+  invalid: RESTART_HINT,
 };
 
 function fireHaptic(type: 'success' | 'tickWeak'): void {
@@ -39,6 +41,11 @@ function fireHaptic(type: 'success' | 'tickWeak'): void {
 
 const PAID_DONE = '납부를 기록했어요';
 
+function earlyDoneMessage(notice: Notice, today: string): string {
+  const saving = potentialSaving(notice, today);
+  return saving > 0 ? `감경 납부를 기록했어요. ${formatWon(saving)} 아꼈어요` : PAID_DONE;
+}
+
 function paymentOption(notice: Notice, today: string): RecordOption {
   const base: Notice = { ...notice, status: 'open' };
   const due = formatWon(currentDueAmount(base, today));
@@ -50,7 +57,7 @@ function paymentOption(notice: Notice, today: string): RecordOption {
       label,
       status: 'paid_early',
       logName: 'mark_paid_early',
-      doneMessage: PAID_DONE,
+      doneMessage: earlyDoneMessage(base, today),
     });
     if (key.label === '감경 마감') return early(`감경가 ${due}으로 납부했어요`);
     if (key.label === '1차 납부기한') return early(`1차 기한 안에 ${due} 납부했어요`);
@@ -63,7 +70,7 @@ function paymentOption(notice: Notice, today: string): RecordOption {
   if (last && last.label !== '감경 마감') {
     return {
       key: 'paid_late',
-      label: '기한 지나 납부했어요',
+      label: `기한 지나서 ${due} 납부했어요`,
       status: 'paid_late',
       logName: 'mark_paid_late',
       doneMessage: PAID_DONE,
@@ -74,7 +81,7 @@ function paymentOption(notice: Notice, today: string): RecordOption {
     label: `기한 안에 ${due} 납부했어요`,
     status: 'paid_early',
     logName: 'mark_paid_early',
-    doneMessage: PAID_DONE,
+    doneMessage: earlyDoneMessage(base, today),
   };
 }
 

@@ -47,7 +47,7 @@ const MSG = {
   discountMax: '감경 금액은 원래 금액보다 작아야 해요',
   receivedEmpty: '고지서 받은 날을 입력해주세요',
   invalidDate: '올바른 날짜를 입력해주세요',
-  receivedFuture: '받은 날은 오늘이나 그 전 날짜로 입력해주세요',
+  receivedFuture: '받은 날은 오늘 이후일 수 없어요',
   receivedOld: `받은 날은 최근 ${INPUT_LIMITS.RECEIVED_MAX_YEARS_AGO}년 안의 날짜로 입력해주세요`,
   deadlineNone: '의견제출 기한이나 납부기한 중 하나를 입력해주세요',
   deadlineBeforeReceived: '기한은 받은 날 이후여야 해요',

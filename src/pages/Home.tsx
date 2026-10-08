@@ -87,7 +87,7 @@ export default function Home() {
         >
           <EmptyState
             title="받은 고지서를 등록해 보세요"
-            description="감경 마감일과 늦으면 붙는 금액을 알려줘요"
+            description="감경 마감과 늦으면 붙는 금액을 계산해 드려요"
           />
           {result.backupFailed ? (
             <div style={{ textAlign: 'center' }}>
