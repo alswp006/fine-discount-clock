@@ -1,14 +1,32 @@
-// @ai-factory:placeholder
-// 배선 선행(wiring-first)이 깐 자리 페이지다 — App.tsx에 `/notice/new`로 이미 연결돼 있다.
-// 이 화면을 담당하는 패킷은 이 파일을 **통째로 교체**하라(위 마커 주석 포함 — 마커가 남으면 산출물로 인정되지 않는다).
-import { PageShell } from "../components/PageShell";
+import { Top } from '@toss/tds-mobile';
+import { ScreenScaffold } from '@/components/ScreenScaffold';
+import { SubmitFooter } from '@/components/BottomCTA';
+import { NoticeFormFields } from '@/components/form/NoticeFormFields';
+import { UnbackedSaveDialog } from '@/components/form/UnbackedSaveDialog';
+import { useNoticeFormState } from '@/components/form/useNoticeFormState';
+import { useNoticeSubmit } from '@/components/form/useNoticeSubmit';
+
+/**
+ * S2. 고지서 등록 — /notice/new
+ * 입력 상태는 useNoticeFormState, 제출(검증 → 저장 → Toast/이동)은 useNoticeSubmit이 맡는다.
+ * 저장소가 손상('unbacked')이면 이동 없이 UnbackedSaveDialog로 덮어쓰기 여부를 묻는다.
+ */
 export default function NoticeCreate() {
+  const formState = useNoticeFormState();
+  const { submit, focusRequest, unbackedOpen, confirmDiscard, closeUnbacked } =
+    useNoticeSubmit(formState);
+
   return (
-    <PageShell>
-      <main data-testid="placeholder-notice-create">
-        <h1>고지서 등록 · S3. 고지서 수정 같은 컴포넌트</h1>
-        <p>이 화면은 준비 중이에요.</p>
-      </main>
-    </PageShell>
+    <ScreenScaffold
+      top={<Top title={<Top.TitleParagraph>고지서 등록</Top.TitleParagraph>} />}
+      bottom={<SubmitFooter label="저장" onClick={submit} />}
+    >
+      <NoticeFormFields formState={formState} focusRequest={focusRequest} />
+      <UnbackedSaveDialog
+        open={unbackedOpen}
+        onConfirm={confirmDiscard}
+        onClose={closeUnbacked}
+      />
+    </ScreenScaffold>
   );
 }
