@@ -123,8 +123,9 @@ export function mockTds() {
     );
 
     return {
-      Button: ({ children, onClick, ...props }: any) =>
-        h("button", { onClick, ...props }, children),
+      // loading은 DOM 속성이 아니다 — 벤더처럼 진행 중에는 눌리지 않게 disabled·aria-busy로 표현한다.
+      Button: ({ children, onClick, loading, disabled, ...props }: any) =>
+        h("button", { onClick, disabled: disabled || loading || undefined, "aria-busy": loading || undefined, ...props }, children),
 
       // SubmitFooter(BottomCTA.tsx)의 기반 — 스텁이 없으면 SubmitFooter를 렌더하는 테스트가
       // undefined 엘리먼트로 죽는다(적대 리뷰 2026-08-30 실측). loading은 disabled로 표현해
@@ -625,9 +626,9 @@ export function mockTossRewardAd() {
     TossRewardAd: ({ children, onReward }: any) => {
       // Auto-trigger onReward in tests to unlock content
       if (onReward) setTimeout(onReward, 0);
-      return children;
+      return React.createElement("div", { "data-testid": "reward-ad" }, children);
     },
-    default: ({ children }: any) => children,
+    default: ({ children }: any) => React.createElement("div", { "data-testid": "reward-ad" }, children),
   }));
 }
 

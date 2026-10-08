@@ -12,15 +12,43 @@ import { test, expect, type Page } from "@playwright/test";
  */
 const ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "home" },
-  { path: "/notice/new", name: "notice-create" },
-  // { path: "/result", name: "result" },   // ← 이 앱의 라우트를 추가
+  { path: "/notice/smoke", name: "notice-result" },
   // { path: "/settings", name: "settings" },
 ];
 
 /** 데이터가 필요한 화면용 localStorage 시드(앱에 맞게 채워라). 앱 스크립트보다 먼저 실행된다. */
 async function seed(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    // window.localStorage.setItem("MY_STORAGE_KEY", JSON.stringify({ /* ... */ }));
+    const d = new Date();
+    const ymd = (add: number) => {
+      const t = new Date(d.getFullYear(), d.getMonth(), d.getDate() + add);
+      return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+    };
+    const now = d.toISOString();
+    window.localStorage.setItem(
+      "fdc:notices:v1",
+      JSON.stringify({
+        version: 1,
+        notices: [
+          {
+            id: "smoke",
+            name: "강남 주정차",
+            kind: "fine",
+            amount: 40000,
+            discountedAmount: null,
+            receivedDate: ymd(-3),
+            opinionDeadline: ymd(11),
+            paymentDeadline: ymd(40),
+            status: "open",
+            paidAmount: null,
+            savedAmount: 0,
+            decidedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      }),
+    );
   });
 }
 
