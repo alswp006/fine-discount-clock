@@ -1,0 +1,9 @@
+{
+  "app_id": "fac_fine_discount_clock",
+  "name": "Fine Discount Clock",
+  "base_url_env": "FAC_FINE_DISCOUNT_CLOCK_BASE_URL",
+  "profile": "experimental",
+  "level": "smoke",
+  "created_by": "factory",
+  "created_at": "2026-10-09"
+}
