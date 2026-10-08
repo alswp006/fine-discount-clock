@@ -104,7 +104,7 @@ describe("홈 페이지(S1) — 정리 섹션·빈/차단 상태·Toast·배너"
     loadMock.mockReturnValue(result({ notices: [paidEarly] }));
     renderHome();
     expect(screen.queryAllByTestId("notice-card")).toHaveLength(0);
-    expect(screen.getByText("남은 고지서가 없어요")).toBeInTheDocument();
+    expect(screen.getByText("남은 고지서가 없어요. 등록한 고지서는 아래 정리한 고지서에 있어요")).toBeInTheDocument();
     expect(screen.getByText("정리한 고지서")).toBeInTheDocument();
     expect(screen.getByText("역삼 속도위반")).toBeInTheDocument();
     expect(screen.getByText("감경 납부 · 32,000원")).toBeInTheDocument();
