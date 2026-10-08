@@ -164,10 +164,12 @@ export interface RouteState {
     inputRules.test.ts
     inputRules.ts
     noticeSchema.ts
+    noticeStore.ts
     review.ts
     schema/
     share.ts
     storage.ts
+    store/
     types.ts
     utils.ts
   main.tsx
@@ -199,7 +201,7 @@ export interface RouteState {
 - schema/versioning.ts: export type VersionVerdict = 'corrupt' | 'migrate' | 'current' | 'newer'; export function classifyVersion(version: unknown, current: number = CURRENT_SCHEMA_VERSION): VersionVerdict; export function migrateNoticesData( data: unknown, fromVersion: number, migrations: NoticeMigrations = MIGRATIONS, toVer; export type StoredDataVerdict = |; export function classifyStoredData(parsed: unknown): StoredDataVerdict
 - share.ts: export interface ShareAppOptions; export async function shareApp(opts: ShareAppOptions): Promise<void>
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
-- types.ts: export type NoticeKind = 'fine' | 'penalty'; export type NoticeStatus = 'open' | 'paid_early' | 'paid_late' | 'objected'; export interface Notice; export type NoticeInput = Pick< Notice, 'name' | 'k...
+- store/loadNotices.ts: export type StoreState = |; export function readStoreState(): StoreState; export function isBackedUp(raw: string): boolean; export function loadNotices(): L...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -207,6 +209,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0002: 입력 해석·날짜 산술·표시 포맷 순수 함수 (files: src/lib/inputRules.ts, src/lib/inputRules.test.ts, src/lib/dateUtils.ts, src/lib/dateUtils.test.ts, src/lib/format.ts)
 - 0003: 계산 엔진 — 감경·가산금·범칙금 단계·기준 기한 (files: src/lib/engine/amounts.ts, src/lib/engine/deadlines.ts, src/lib/fineEngine.ts, src/lib/engine/amounts.test.ts, src/lib/engine/deadlines.test.ts)
 - 0004: 스키마 검증·버전 판정·마이그레이션·백업 해석 (files: src/lib/schema/validateNotices.ts, src/lib/schema/versioning.ts, src/lib/schema/corruptBackup.ts, src/lib/noticeSchema.ts, src/lib/schema/validateNotices.test.ts)
+- 0005: localStorage 저장소 — loadNotices·saveNotice·updateStatus·deleteNotice (files: src/lib/store/storageCore.ts, src/lib/store/loadNotices.ts, src/lib/store/saveNotice.ts, src/lib/store/mutateNotice.ts, src/lib/noticeStore.ts)
 
 ## Available exports from existing files
 // src/App.tsx
