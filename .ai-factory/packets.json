@@ -1,0 +1,792 @@
+[
+  {
+    "id": "0001",
+    "title": "엔티티·결과·RouteState 타입과 법령 기준 상수",
+    "epic": "Epic 1. 데이터 계층",
+    "task": {
+      "description": "src/lib/types.ts에 SPEC Data Models의 타입을 옮긴다. 대상은 Notice, NoticeInput, NoticeKind, NoticeStatus, KeyDeadline, FineComparison, FineScenarioRow, PenaltyStages, LoadResult(newerVersion 포함), StoreError, RouteState다. types.ts에는 런타임 코드를 넣지 않는다. src/lib/fineRules.ts에는 FINE_RULES, PENALTY_RULES, INPUT_LIMITS 상수를 출처 주석과 함께 SPEC 그대로 둔다.",
+      "acceptance_criteria": [
+        "types.ts에 export된 런타임 값이 0개다. tsc --noEmit 후 생성되는 JS 출력이 비어 있다.",
+        "StoreError가 'quota'|'unavailable'|'limit'|'not_found'|'unbacked'|'newer_version'|'invalid' 7개 리터럴의 유니온이다.",
+        "LoadResult가 notices, corrupted, backupFailed, unavailable, newerVersion 5개 필드를 가진다.",
+        "RouteState가 { justSaved?: boolean; focus?: 'paymentDeadline'; deletedName?: string }이다.",
+        "fineRules.ts의 값이 SPEC과 같다: DISCOUNT_PERCENT 20, SURCHARGE_PERCENT 3, HEAVY_SURCHARGE_PERMILLE 12, HEAVY_SURCHARGE_MAX_MONTHS 60, FIRST_PERIOD_DAYS 10, SECOND_PERIOD_DAYS 20, SECOND_SURCHARGE_PERCENT 20, MAX_NOTICES 50. 각 상수 옆에 법령 조문 주석이 있다."
+      ]
+    },
+    "covers": [],
+    "files": [
+      "src/lib/types.ts",
+      "src/lib/fineRules.ts"
+    ],
+    "definition_of_done": [
+      "npm run typecheck 통과",
+      "types.ts에 const/function/class 선언 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "interface Notice { id: string; name: string; kind: 'fine'|'penalty'; amount: number; discountedAmount: number|null; receivedDate: string; opinionDeadline: string|null; paymentDeadline: string|null; status: 'open'|'paid_early'|'paid_late'|'objected'; paidAmount: number|null; savedAmount: number; decidedAt: string|null; createdAt: string; updatedAt: string } → localStorage key: 'fdc:notices:v1' ({ version: 1; notices: Notice[] }), 'fdc:notices:corrupt' ({ version: 1; backups: { raw: string }[] })",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0002",
+    "title": "입력 해석·날짜 산술·표시 포맷 순수 함수",
+    "epic": "Epic 1. 데이터 계층",
+    "task": {
+      "description": "순수 함수 세 파일을 만든다. src/lib/inputRules.ts에는 parseAmountInput, countChars(Array.from 기준), addYears, isValidYmd(YYYY-MM-DD 형식과 실제 달력 날짜)를 둔다. src/lib/dateUtils.ts에는 addDays, diffDays, todayYmd(로컬 날짜)를 둔다. src/lib/format.ts에는 formatWon(toLocaleString('ko-KR')+'원'), formatDateDot('2026.10.20(화)'), formatDday('D-11'/'D-DAY'/'D+1')를 둔다. 화면 패킷은 format.ts를 import만 한다.",
+      "acceptance_criteria": [
+        "parseAmountInput('40,000원')은 { kind:'ok', digits:'40000' }, '4만원'은 { kind:'ok', digits:'4' }를 반환한다. 소수점이나 음수 기호가 있는 입력은 kind가 'ok'가 아닌 거부 결과를 반환한다.",
+        "isValidYmd: '2028-02-29'와 '2026-12-31'은 true다. '2026-02-29', '2026-02-30', '2026-04-31'은 false다.",
+        "countChars('🚗'.repeat(20))은 20이다. addYears('2026-10-09', -5)는 '2021-10-09'이다.",
+        "diffDays('2026-10-20','2026-10-09')는 11이다. addDays('2026-10-05',10)은 '2026-10-15'이다.",
+        "formatDateDot('2026-10-20')은 '2026.10.20(화)'이다. formatDday는 0이면 'D-DAY', 11이면 'D-11', -1이면 'D+1'이다. formatWon(32000)은 '32,000원'이다."
+      ]
+    },
+    "covers": [
+      "F1-AC-14",
+      "F1-AC-16"
+    ],
+    "files": [
+      "src/lib/inputRules.ts",
+      "src/lib/inputRules.test.ts",
+      "src/lib/dateUtils.ts",
+      "src/lib/dateUtils.test.ts",
+      "src/lib/format.ts"
+    ],
+    "definition_of_done": [
+      "vitest inputRules·dateUtils 테스트 통과",
+      "Date 생성은 로컬 날짜 기준이고 toISOString으로 날짜를 자르지 않는다"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0003",
+    "title": "계산 엔진 — 감경·가산금·범칙금 단계·기준 기한",
+    "epic": "Epic 1. 데이터 계층",
+    "task": {
+      "description": "src/lib/engine/amounts.ts에 calcFineComparison, calcFineScenario, calcPenaltyStages, calcDday를 둔다. src/lib/engine/deadlines.ts에는 getKeyDeadline, getLastDeadline, currentDueAmount, potentialSaving, 상태 기록값 계산을 둔다. src/lib/fineEngine.ts는 이 둘을 다시 내보내는 barrel이다. 모든 비율은 FINE_RULES 상수와 정수 연산(Math.floor)으로 구한다. opinionDeadline이 null인 과태료는 감경 단계를 건너뛴다.",
+      "acceptance_criteria": [
+        "calcFineComparison({amount:40000, discountedAmount:null})은 {discounted:32000, full:40000, overdueFirst:41200, saving:8000}이다. amount 33333이면 discounted 26666, overdueFirst 34332다. discountedAmount 30000이면 saving은 10000이다.",
+        "calcFineScenario(40000,61)의 total은 month0 41200(surcharge 1200), month1 41680, month12 46960, month60 70000(surcharge 30000)이다.",
+        "calcPenaltyStages(receivedDate '2026-10-05', paymentDeadline null)는 firstDeadline '2026-10-15', secondDeadline '2026-11-04', secondAmount 48000이다. paymentDeadline이 '2026-10-16'이면 secondDeadline은 '2026-11-05'다.",
+        "getKeyDeadline: today '2026-10-20'이면 {label:'감경 마감', dday:0}이다. '2026-10-21'이면 {label:'납부기한', date:'2026-11-30', dday:40}이다. '2026-12-01'이면 null이고, 이때 getLastDeadline의 dday는 -1이다.",
+        "currentDueAmount/potentialSaving의 4구간 값은 32000/8000, 40000/1200, 범칙금 60000 1차 60000/12000, 2차 72000/0이다. 모든 기한이 지나면 41200/0이다. opinionDeadline이 null인 과태료는 감경가를 쓰지 않는다."
+      ]
+    },
+    "covers": [
+      "F1-AC-1",
+      "F1-AC-2",
+      "F1-AC-3",
+      "F1-AC-4",
+      "F1-AC-5",
+      "F1-AC-6",
+      "F1-AC-11",
+      "F1-AC-22"
+    ],
+    "files": [
+      "src/lib/engine/amounts.ts",
+      "src/lib/engine/deadlines.ts",
+      "src/lib/fineEngine.ts",
+      "src/lib/engine/amounts.test.ts",
+      "src/lib/engine/deadlines.test.ts"
+    ],
+    "definition_of_done": [
+      "vitest engine 테스트 통과",
+      "숫자 리터럴 20/3/12/60/10이 엔진 코드에 직접 나오지 않고 fineRules 상수만 쓴다"
+    ],
+    "depends_on": [
+      "0002"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0004",
+    "title": "스키마 검증·버전 판정·마이그레이션·백업 해석",
+    "epic": "Epic 1. 데이터 계층",
+    "task": {
+      "description": "src/lib/schema/validateNotices.ts에 SPEC '로드 검증 규칙'을 전부 구현한다(컬렉션, 항목 형식, 불변식, 상태별 기록값 표). 오늘 날짜 규칙은 쓰지 않는다. versioning.ts에는 판정 함수(corrupt/migrate/current/newer)와 migrateNoticesData를 둔다. corruptBackup.ts에는 parseCorruptBackup를 둔다. noticeSchema.ts는 CURRENT_SCHEMA_VERSION=1, MAX_CORRUPT_BACKUPS=3, MIGRATIONS={}와 barrel이다.",
+      "acceptance_criteria": [
+        "SPEC F1-AC-15의 기준 항목 B만 있는 {version:1, notices:[B]}는 [B]를 반환한다. 2019년 날짜로 바꾼 B도 통과한다. 두 기한이 모두 null인 과태료와 opinionDeadline이 paymentDeadline보다 늦은 항목은 null이다.",
+        "유효 항목 51개는 null, 50개는 50건이다. id 'a1'이 중복되면 null이다. notices가 {}이거나, 최상위가 []이거나, amount가 누락된 항목이 있으면 null이다.",
+        "버전 판정: version이 0, '1', 1.5이거나 없으면 corrupt다. 1은 current, 2는 newer다.",
+        "migrateNoticesData({version:1,notices:[B]},1,{1:d=>({version:2,notices:d.notices.map(n=>({...n,memo:''}))})},2)는 {version:2,notices:[{...B,memo:''}]}를 반환한다. migrations가 {}이면 null이다.",
+        "parseCorruptBackup: 키가 없으면 빈 목록이다. 형식이 맞으면 그 목록이다. 맨 문자열 'abc'는 [{raw:'abc'}]다. {version:2,…}는 {kind:'newer'}다."
+      ]
+    },
+    "covers": [
+      "F1-AC-9",
+      "F1-AC-15",
+      "F1-AC-16",
+      "F1-AC-17",
+      "F1-AC-19",
+      "F1-AC-20",
+      "F1-AC-21"
+    ],
+    "files": [
+      "src/lib/schema/validateNotices.ts",
+      "src/lib/schema/versioning.ts",
+      "src/lib/schema/corruptBackup.ts",
+      "src/lib/noticeSchema.ts",
+      "src/lib/schema/validateNotices.test.ts"
+    ],
+    "definition_of_done": [
+      "vitest schema 테스트 통과",
+      "validateNotices는 throw하지 않고, 입력이 무엇이든 Notice[] 또는 null을 반환한다"
+    ],
+    "depends_on": [
+      "0002"
+    ],
+    "db_schema": "NoticesData { version: 1; notices: Notice[] } → 'fdc:notices:v1' / CorruptBackup { version: 1; backups: { raw: string }[] (최대 3, 오래된 순) } → 'fdc:notices:corrupt'",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0005",
+    "title": "localStorage 저장소 — loadNotices·saveNotice·updateStatus·deleteNotice",
+    "epic": "Epic 1. 데이터 계층",
+    "task": {
+      "description": "src/lib/store/storageCore.ts에 예외 분류와 safeGet/safeSet을 둔다. 예외가 DOMException이고 name이 QuotaExceededError 또는 NS_ERROR_DOM_QUOTA_REACHED이거나 code가 22 또는 1014면 'quota', 그 밖은 'unavailable'이다. loadNotices.ts에는 손상 백업을 쌓는 규칙을, saveNotice.ts에는 신규·수정·unbacked·discardCorrupt·타임스탬프 처리를, mutateNotice.ts에는 updateStatus와 deleteNotice를 둔다. noticeStore.ts는 barrel이다. 어떤 함수도 throw하지 않는다.",
+      "acceptance_criteria": [
+        "키가 없으면 loadNotices는 플래그 5개가 모두 false이고 notices가 []다. '{bad'면 corrupted:true이고, 백업 키가 {\"version\":1,\"backups\":[{\"raw\":\"{bad\"}]}가 된다. 기존 백업 '{older'가 있으면 그 뒤에 추가된다. 백업이 이미 3개면 쓰지 않고 backupFailed:true다. version 2 데이터는 newerVersion:true이고 백업 쓰기는 0회다. getItem이 SecurityError를 던지면 unavailable:true다.",
+        "백업하지 못한 '{bad' 상태에서 saveNotice(input)는 {ok:false,error:'unbacked'}를 반환하고 원문은 그대로다. {discardCorrupt:true}로 호출하면 ok:true이고 저장값은 새 1건이다. newer 상태에서는 두 방식 모두 'newer_version'이다.",
+        "saveNotice는 50건 상태에서 'limit'을, 두 기한이 모두 null인 과태료에서 'invalid'를, setItem이 Quota 예외를 던지면 'quota'를 반환한다. 실패하면 원문이 바뀌지 않는다.",
+        "타임스탬프: 신규 저장은 createdAt과 updatedAt이 같은 시각이다. 수정은 createdAt을 유지하고 updatedAt만 새 시각이다. updateStatus 성공 시 대상의 updatedAt만 갱신한다. 실패한 쓰기에서는 아무 값도 바뀌지 않는다.",
+        "updateStatus와 deleteNotice는 없는 id에 'not_found', Quota 예외에 'quota', SecurityError에 'unavailable'을 반환한다. 대상 id 1건만 바뀌고 백업 키에는 쓰지 않는다. 'open'으로 되돌리면 paidAmount null, savedAmount 0, decidedAt null이다."
+      ]
+    },
+    "covers": [
+      "F1-AC-7",
+      "F1-AC-8",
+      "F1-AC-10",
+      "F1-AC-12",
+      "F1-AC-13",
+      "F1-AC-17",
+      "F1-AC-18",
+      "F1-AC-19",
+      "F1-AC-21"
+    ],
+    "files": [
+      "src/lib/store/storageCore.ts",
+      "src/lib/store/loadNotices.ts",
+      "src/lib/store/saveNotice.ts",
+      "src/lib/store/mutateNotice.ts",
+      "src/lib/noticeStore.ts"
+    ],
+    "definition_of_done": [
+      "typecheck 통과",
+      "저장소 함수 안에 console.error 0건, throw 0건",
+      "쓰기 직전에 전체 목록을 validateNotices로 확인한다"
+    ],
+    "depends_on": [
+      "0004"
+    ],
+    "db_schema": "'fdc:notices:v1' → { version: 1; notices: Notice[] } (최대 50) / 'fdc:notices:corrupt' → { version: 1; backups: { raw: string }[] } (최대 3, loadNotices만 씀)",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0006",
+    "title": "데이터 훅 useNotices·TodayContext·화면 공용 파생값·문구 맵",
+    "epic": "Epic 1. 데이터 계층",
+    "task": {
+      "description": "src/lib/useNotices.ts를 만든다. useState 초기화 함수에서 loadNotices를 동기로 읽고, reload, save, updateStatus, remove를 노출한다. src/lib/TodayContext.tsx는 오늘 날짜를 주입하는 Provider와 useToday 훅이다. noticeSelectors.ts에는 buildOpenCards(정렬·배지·dueText), buildSavingsHero, buildDecidedSection을, messages.ts에는 오류 코드별 Toast 문구를, routeState.ts에는 location.state 판독기를 둔다.",
+      "acceptance_criteria": [
+        "F5-AC-1의 A/B/C 3건을 today '2026-10-09'에 넣으면 buildOpenCards는 C → B → A 순서이고 dueText는 32,000원/60,000원/32,000원이다. 같은 dday끼리는 createdAt 오름차순이다. 기한이 지난 카드가 맨 위다.",
+        "buildSavingsHero의 결과는 total 28000, count 3, urgentName '마트 앞 주정차', urgentDday 'D-2'다. paid_early 1건을 더해도 같은 값이고, open이 0건이면 null이다.",
+        "buildDecidedSection은 paid_early 1건(paidAmount 32000, savedAmount 8000)에 대해 행 '감경 납부 · 32,000원'과 savedTotal 8000을 반환한다.",
+        "messages: quota는 '저장 공간이 부족해 저장하지 못했어요', limit은 '고지서는 50장까지 등록할 수 있어요', invalid는 '입력값을 다시 확인해 주세요', unavailable은 '저장 공간에 접근할 수 없어 저장하지 못했어요', newer_version은 '새 버전 앱에서 저장한 데이터가 있어 저장하지 못했어요'다.",
+        "readRouteState(null 또는 잘못된 값)는 {}를 반환하고 throw하지 않는다."
+      ]
+    },
+    "covers": [
+      "F5-AC-1",
+      "F5-AC-2",
+      "F5-AC-3",
+      "F6-AC-2",
+      "F6-AC-4",
+      "F3-AC-15",
+      "F2-AC-6"
+    ],
+    "files": [
+      "src/lib/useNotices.ts",
+      "src/lib/TodayContext.tsx",
+      "src/lib/noticeSelectors.ts",
+      "src/lib/messages.ts",
+      "src/lib/routeState.ts"
+    ],
+    "definition_of_done": [
+      "typecheck 통과",
+      "selectors는 today를 인자로 받는 순수 함수다(Date.now 직접 호출 0건)"
+    ],
+    "depends_on": [
+      "0003",
+      "0005"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0007",
+    "title": "공용 차단 상태 화면(StatusState)과 렌더 오류 ErrorBoundary",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "src/components/StatusState.tsx를 만든다. 블루프린트 BlockedState 조립(Asset.ContentIcon + EmptyState + weak Button)을 variant(notFound/unavailable/newer/route404/renderError)와 action prop으로 재사용하게 한다. src/components/AppErrorBoundary.tsx는 class ErrorBoundary로, 오류가 나면 StatusState renderError를 보이고 '다시 시도'를 누르면 window.location.reload()를 호출한다. 모든 화면 패킷이 이것을 import한다.",
+      "acceptance_criteria": [
+        "variant='unavailable'이면 '저장 공간에 접근할 수 없어요'와 '토스 앱을 다시 실행한 뒤 시도해 주세요'가 보인다. variant='newer'이면 '새 버전 앱에서 저장한 데이터가 있어요'가 보인다. variant='notFound'이면 '고지서를 찾을 수 없어요'가 보인다.",
+        "actionLabel과 onAction을 넘기면 그 라벨의 Button이 렌더되고, 탭하면 onAction이 1회 호출된다.",
+        "AppErrorBoundary의 자식이 렌더 중 throw하면 '일시적인 문제가 생겼어요', '다시 시도해도 계속되면 토스 앱을 다시 실행해 주세요', '다시 시도' Button이 보인다. 탭하면 window.location.reload가 1회 호출된다."
+      ]
+    },
+    "covers": [
+      "F7-AC-10"
+    ],
+    "files": [
+      "src/components/StatusState.tsx",
+      "src/components/AppErrorBoundary.tsx",
+      "src/components/AppErrorBoundary.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest AppErrorBoundary 테스트 통과",
+      "HEX 색상 0건, 인라인 margin/padding 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "공용 조립 BlockedState(새 TDS 컴포넌트가 아니라 반복 패턴):\n<Asset.ContentIcon … />  // EmptyState가 아이콘을 내장하면 생략\n<Spacing size={16} />\n<EmptyState title={title} description={desc} action={<Button variant='weak' size='large' onClick={onAction}>{label}</Button>} />\n상태표:\n- 없는 고지서·손상 (S3 수정, S4): '고지서를 찾을 수 없어요' / — / 홈으로\n- 저장소 접근 불가: '저장 공간에 접근할 수 없어요' / '토스 앱을 다시 실행한 뒤 시도해 주세요' / 홈으로 (S1만 '다시 시도')\n- 새 버전 데이터: '새 버전 앱에서 저장한 데이터가 있어요' / '토스 앱을 다시 실행한 뒤 시도해 주세요' / 홈으로 (S1만 '다시 시도')\n- 없는 경로 (S5): '페이지를 찾을 수 없어요' / — / 홈으로\n- 렌더 오류 (S6): '일시적인 문제가 생겼어요' / '다시 시도해도 계속되면 토스 앱을 다시 실행해 주세요' / 다시 시도\n'홈으로'는 호출 측이 navigate('/', { replace: true })로 넘긴다. 보조 문구 색은 var(--adaptiveGrey600)이다. Asset.ContentIcon과 EmptyState의 props는 템플릿 사용례(.d.ts)를 확인해 그대로 따른다."
+  },
+  {
+    "id": "0008",
+    "title": "홈 컴포넌트 — 아끼는 돈 히어로·고지서 카드·미결정 목록·등록 동작",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "src/components/home/에 다음을 만든다. SavingsHero(SummaryHero+Amount/CountUp, data-testid='savings-hero'), NoticeCard(ListRow 2RowTypeA, 오른쪽에 D-day와 Badge, data-testid='notice-card'), OpenNoticesSection('남은 고지서' 제목+Card 목록), useAddNotice(50장이면 Toast, 아니면 logClick('home_add_notice') 후 navigate('/notice/new')). 데이터는 0006 selectors 결과를 props로 받는다.",
+      "acceptance_criteria": [
+        "F5-AC-1 3건이면 notice-card 3개가 C → B → A 순서로 보이고, 각 카드에 32,000원/60,000원/32,000원 금액 문구가 있다.",
+        "SavingsHero에 '기한 안에 내면 아끼는 돈', '28,000원', '고지서 3장 · 가장 급한 건 마트 앞 주정차 D-2'가 보인다.",
+        "D-2 카드에는 Badge '마감 임박'이, D+1 카드에는 Badge '기한 지남'이 보인다. 모든 기한이 지난 과태료 카드에는 '납부기한 지남 · D+1'과 '41,200원부터'가 보인다.",
+        "카드를 탭하면 tickWeak 햅틱, logClick('home_open_notice'), navigate('/notice/<id>')가 각 1회 호출된다.",
+        "useAddNotice는 50건이면 navigate 없이 Toast '고지서는 50장까지 등록할 수 있어요'를 띄운다."
+      ]
+    },
+    "covers": [
+      "F5-AC-1",
+      "F5-AC-2",
+      "F5-AC-3",
+      "F5-AC-5",
+      "F3-AC-14"
+    ],
+    "files": [
+      "src/components/home/SavingsHero.tsx",
+      "src/components/home/NoticeCard.tsx",
+      "src/components/home/OpenNoticesSection.tsx",
+      "src/components/home/useAddNotice.ts",
+      "src/components/home/OpenNoticesSection.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest OpenNoticesSection 테스트 통과",
+      "카드 터치 영역 44px 이상(ListRow 기본값)",
+      "HEX 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Screen: 홈 (/) — Pattern: FixedBottomCTA (+ Hero Summary)\nTDS: Top, Spacing, Paragraph.Text, ListRow, ListRow.Texts, Badge, Button, Toast(useToast) · 템플릿: SummaryHero, Amount, CountUp, Card\n<div data-testid='savings-hero'><SummaryHero label='기한 안에 내면 아끼는 돈'\n  value={<Amount value={totalSaving} unit='원' typography='t1' />}   // CountUp 애니메이션\n  caption='고지서 3장 · 가장 급한 건 마트 앞 주정차 D-2' /></div>\n<Spacing size={24} />\n<Paragraph.Text typography='t4'>남은 고지서</Paragraph.Text>\n<Spacing size={12} />\n<Card>{openList.map(n => (   // 정렬: dday 오름차순(음수 먼저) → createdAt 오름차순\n  <ListRow data-testid='notice-card' onClick={() => open(n.id)}\n    contents={<ListRow.Texts type='2RowTypeA' top={n.name} bottom='감경 마감 · 지금 내면 32,000원' />}\n    right={<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>\n      <Paragraph.Text typography='t5'>D-2</Paragraph.Text>\n      {imminent && <Badge size='small' variant='weak' color='red'>마감 임박</Badge>}\n      {overdue && <Badge size='small' variant='fill' color='red'>기한 지남</Badge>}</div>} />))}</Card>\n카드 탭: 햅틱 tickWeak → logClick('home_open_notice') → navigate('/notice/<id>'). 고지서 이름은 사용자가 입력한 그대로 표시한다. data-testid가 템플릿 컴포넌트에 직접 붙지 않으면 스타일 없는 div로 감싼다."
+  },
+  {
+    "id": "0009",
+    "title": "홈 페이지(S1) — 정리 섹션·빈/차단 상태·Toast·배너",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "src/pages/Home.tsx를 조립한다. 구성은 Top('과태료 감경시계'), 0008의 히어로와 미결정 목록, 새 DecidedSection('정리한 고지서'와 saved-total), 빈 상태, unbacked-warning, unavailable/newer일 때의 StatusState('다시 시도'), 마지막 카드 아래 AdSlot 1개, SubmitFooter '고지서 등록'이다. 손상 Toast와 삭제 Toast는 StrictMode에서도 1회만 띄운다.",
+      "acceptance_criteria": [
+        "0건이면 '받은 고지서를 등록해 보세요'와 '감경 마감과 늦으면 붙는 금액을 계산해 드려요'가 보이고, savings-hero와 AdSlot은 0개다. 1건 이상이면 AdSlot이 마지막 notice-card 뒤에 1개만 있다.",
+        "paid_early 1건만 있으면 상단 카드는 0개다. '남은 고지서가 없어요', '감경 납부 · 32,000원', saved-total '지금까지 아낀 금액 8,000원'이 보인다.",
+        "corrupted이면 Toast '저장된 데이터를 읽을 수 없어 새로 시작해요'가 1회 뜨고 빈 상태가 보인다. backupFailed이면 unbacked-warning이 추가로 보인다.",
+        "unavailable이나 newerVersion이면 StatusState와 '다시 시도'만 보인다. 히어로, 목록, AdSlot, SubmitFooter는 0개다. '다시 시도'를 누르면 reload가 1회 호출된다.",
+        "location.state.deletedName이 '강남 주정차'이면 Toast ''강남 주정차' 고지서를 삭제했어요'가 1회 뜬다."
+      ]
+    },
+    "covers": [
+      "F5-AC-4",
+      "F5-AC-5",
+      "F5-AC-6",
+      "F5-AC-7",
+      "F5-AC-8",
+      "F5-AC-9",
+      "F5-AC-10",
+      "F5-AC-11",
+      "F6-AC-2"
+    ],
+    "files": [
+      "src/components/home/DecidedSection.tsx",
+      "src/pages/Home.tsx",
+      "src/pages/Home.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest Home 테스트 통과",
+      "AdSlot을 고정 height/min-height/배경색 래퍼로 감싸지 않음",
+      "console.error 0회"
+    ],
+    "depends_on": [
+      "0007",
+      "0008"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Screen: 홈 (/) — Pattern: FixedBottomCTA (+ Hero Summary)\nTDS: Top, Spacing, Paragraph.Text, ListRow, ListRow.Texts, Badge, Button, Toast(useToast) · 템플릿: ScreenScaffold, SummaryHero, Amount, CountUp, Card, EmptyState, Asset.ContentIcon, AdSlot, SubmitFooter\n<Top title={<Top.TitleParagraph>과태료 감경시계</Top.TitleParagraph>} />\n{openList.length > 0 ? <SavingsHero …/> : closedList.length > 0 && <Paragraph.Text typography='t5'>남은 고지서가 없어요</Paragraph.Text>}\n<Spacing size={24} /> <OpenNoticesSection …/>\n{closedList.length > 0 && (<>\n  <Spacing size={24} /><Paragraph.Text typography='t4'>정리한 고지서</Paragraph.Text><Spacing size={4} />\n  <Paragraph.Text data-testid='saved-total' typography='t6' color='var(--adaptiveGrey600)'>지금까지 아낀 금액 8,000원</Paragraph.Text>\n  <Spacing size={12} />\n  {closedList.map(n => <ListRow contents={<ListRow.Texts type='2RowTypeA' top={n.name} bottom='감경 납부 · 32,000원' />} />)}</>)}\n<Spacing size={24} />\n<AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID} />   // 고정 높이·배경 래퍼 금지\n<SubmitFooter label='고지서 등록' onClick={handleAdd} />\nStates:\n- Loading: 없음. useState 초기화 함수에서 loadNotices()를 동기로 읽는다.\n- Empty (F5-AC-4): EmptyState 제목 '받은 고지서를 등록해 보세요', 설명 '감경 마감과 늦으면 붙는 금액을 계산해 드려요'. action은 넣지 않는다(SubmitFooter와 중복). savings-hero와 AdSlot은 렌더하지 않는다.\n- Error: 손상이면 Toast '저장된 데이터를 읽을 수 없어 새로 시작해요'를 1회 띄우고 Empty를 보인다. backupFailed이면 Empty 아래 Paragraph.Text data-testid='unbacked-warning'(t7, var(--adaptiveGrey700)) '이전 데이터를 백업하지 못했어요. 새 고지서를 등록하면 이전 데이터는 지워져요'. 접근 불가·새 버전 데이터는 BlockedState(action '다시 시도')만 보이고, 히어로·목록·AdSlot·SubmitFooter는 렌더하지 않는다.\nInteractions: SubmitFooter '고지서 등록'은 내장 햅틱만 쓰고 logClick('home_add_notice') 후 이동한다(50장이면 Toast). '다시 시도'는 tickWeak 후 loadNotices()를 다시 호출한다. 진입 시 deletedName Toast를 1회 띄운다. SubmitFooter는 safe-area 하단 여백(calc(Npx + env(safe-area-inset-bottom)))을 내장값으로 지킨다."
+  },
+  {
+    "id": "0010",
+    "title": "고지서 입력 폼 — 검증 순수 함수·폼 상태·금액 필드·필드 묶음",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "src/lib/noticeFormValidation.ts를 만든다. validateNoticeForm(values, today, mode)은 필드별 문구 1개와 firstErrorField를 돌려주고, toNoticeInput은 범칙금이면 숨긴 값을 null로 바꾼다. hasRecordResetChange도 둔다. src/components/form/에는 useNoticeFormState, AmountField(inputMode numeric, 천 단위 콤마, 소수점·음수는 거부하고 문구 표시), NoticeFormFields(이름, 유형 Chip, 금액, 감경 금액, 날짜 3개)를 만든다.",
+      "acceptance_criteria": [
+        "{name:'', amount:0, receivedDate:비움}이면 이름·금액·받은 날 3개 필드에 오류 문구가 동시에 표시된다. firstErrorField는 'name'이다. 이름 문구는 '고지서 이름을 입력해주세요', 금액 문구는 '금액을 1,000원 이상 입력해주세요'이고, 공백만 있는 이름도 같은 이름 문구다.",
+        "과태료의 두 기한이 모두 비면 '의견제출 기한이나 납부기한 중 하나를 입력해주세요'다. 받은 날보다 앞선 기한은 '기한은 받은 날 이후여야 해요'다. 받은 날 '2021-10-08'은 '받은 날은 최근 5년 안의 날짜로 입력해주세요'이고 '2021-10-09'는 통과한다. 이모지 20개 이름은 통과하고 21개는 '이름은 20자 이내로 입력해주세요'다.",
+        "유형 ChipItem '범칙금'을 탭하면 의견제출 기한과 감경 금액 필드가 사라지고, 납부기한 라벨이 '1차 납부기한'으로 바뀐다. toNoticeInput은 숨긴 감경 금액 30000을 null로 만든다.",
+        "빈 금액 필드에 '40000.5'를 넣으면 값은 비어 있고 '소수점 없이 원 단위로 입력해주세요'가 보인다. '40000'을 넣으면 '40,000'으로 표시되고 input의 inputMode는 numeric이다. 이름 input에는 maxlength 속성이 없다.",
+        "hasRecordResetChange: 이름만 바꾸면 false, amount를 바꾸면 true다. 금액 값을 바꾸면 금액 문구만 사라지고 이름 문구는 남는다."
+      ]
+    },
+    "covers": [
+      "F2-AC-2",
+      "F2-AC-3",
+      "F2-AC-4",
+      "F2-AC-7",
+      "F2-AC-9",
+      "F2-AC-11",
+      "F2-AC-12",
+      "F2-AC-13",
+      "F2-AC-14"
+    ],
+    "files": [
+      "src/lib/noticeFormValidation.ts",
+      "src/lib/noticeFormValidation.test.ts",
+      "src/components/form/useNoticeFormState.ts",
+      "src/components/form/AmountField.tsx",
+      "src/components/form/NoticeFormFields.tsx"
+    ],
+    "definition_of_done": [
+      "vitest noticeFormValidation 테스트 통과",
+      "오류는 TDS TextField의 error 상태와 help 문구로 표시한다",
+      "ChipItem 탭에 tickWeak 햅틱"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Screen: 고지서 등록·수정 (/notice/new · /notice/:id/edit) — Pattern: InputForm (FixedBottomCTA). 블루프린트 본문은 잘려 있으므로 SPEC 기준으로 조립한다.\nTDS: TextField(이름 / 원래 금액 inputMode='numeric' / 고지서에 적힌 감경 금액 / 받은 날·의견제출 기한·납부기한 type='date'), Chip(그룹, kind='select') + ChipItem('과태료','범칙금'), Spacing, Paragraph.Text(도움말 var(--adaptiveGrey600)).\n배치 순서: <Spacing size={16} /> 이름 → <Spacing size={8} /> 유형 Chip → 원래 금액 → 감경 금액(과태료만) → 받은 날 → 의견제출 기한(과태료만) → 납부기한(범칙금이면 라벨 '1차 납부기한', 비우면 받은 날+10일).\n- 필드마다 오류 문구는 1개만 TextField error/help로 표시한다.\n- 금액 필드는 포커스 시 scrollIntoView를 1회 호출해 키보드에 가리지 않게 한다.\n- 받은 날 오류 문구는 블루프린트 UX 라이팅 규칙에 따라 '받은 날은 오늘이나 그 전 날짜로 입력해주세요'를 쓴다(SPEC 원문 '받은 날은 오늘 이후일 수 없어요'와 충돌하므로 블루프린트 우선 — 테스트 기대 문구도 이것으로 맞춘다).\n- input 속성(type='date', inputMode, enterKeyHint)이 TDS TextField로 그대로 전달되는지 .d.ts를 확인한다.\n- HEX 금지, 인라인 여백 금지(flex 배치만 허용)."
+  },
+  {
+    "id": "0011",
+    "title": "신규 등록 페이지(S2) NoticeCreate와 제출 흐름",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "src/components/form/useNoticeSubmit.ts를 만든다. 검증 → saveNotice → 오류 코드별 Toast(messages) 순서이고, 'unbacked'이면 UnbackedSaveDialog를 띄워 discardCorrupt로 다시 저장한다. src/pages/NoticeCreate.tsx는 Top '고지서 등록', NoticeFormFields, SubmitFooter '저장'으로 구성한다. 저장에 성공하면 Toast '고지서를 등록했어요'를 띄우고 navigate('/notice/<id>', {state:{justSaved:true}})로 이동한다.",
+      "acceptance_criteria": [
+        "F2-AC-1 값으로 '저장'을 탭하면 fdc:notices:v1에 1건이 생기고, logClick('notice_save')가 1회 호출되며, generateHapticFeedback({type:'success'})가 호출되고, 결과 화면으로 이동한다.",
+        "saveNotice가 limit/quota/invalid/unavailable/newer_version을 반환하면 각각의 SPEC 문구 Toast가 뜨고, 폼 입력값은 유지되며, console.error는 0회다.",
+        "'unbacked'이면 AlertDialog가 뜬다(왼쪽 버튼 '닫기'). 확인하면 discardCorrupt:true로 저장한다. logClick('notice_save')는 처음 탭에서만 1회 호출된다.",
+        "corrupted, unavailable, newerVersion 상태에서도 /notice/new는 빈 폼을 정상으로 렌더한다.",
+        "거부 문구가 뜬 빈 금액 필드로 '저장'을 탭하면 문구가 '금액을 숫자로 입력해주세요'로 바뀐다."
+      ]
+    },
+    "covers": [
+      "F2-AC-1",
+      "F2-AC-6",
+      "F2-AC-10",
+      "F2-AC-11",
+      "F2-AC-15",
+      "F2-AC-16",
+      "F2-AC-17"
+    ],
+    "files": [
+      "src/components/form/useNoticeSubmit.ts",
+      "src/components/form/UnbackedSaveDialog.tsx",
+      "src/pages/NoticeCreate.tsx",
+      "src/pages/NoticeCreate.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest NoticeCreate 테스트 통과",
+      "SubmitFooter의 '저장'이 키보드 위에 보인다(템플릿 SubmitFooter 사용)",
+      "Dialog 왼쪽 버튼 문구 '닫기'"
+    ],
+    "depends_on": [
+      "0007",
+      "0010"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Screen: 고지서 등록 (/notice/new) — Pattern: InputForm (FixedBottomCTA)\nTDS: ScreenScaffold, Top(title '고지서 등록'), NoticeFormFields(0010), SubmitFooter(label '저장'), AlertDialog, Toast(useToast().openToast).\n- AlertDialog가 버튼 2개 슬롯을 지원하지 않으면 BottomSheet + BottomSheet.DoubleCTA로 대체한다(왼쪽 '닫기').\n- UnbackedSaveDialog 문구는 SPEC F2-AC-15 원문을 따르고, 확인 버튼을 누르면 discardCorrupt 저장을 한다.\n- 저장 버튼: 성공 시 generateHapticFeedback({ type: 'success' })(import from '@apps-in-toss/web-framework').\n- Loading: 없음(동기 저장). Error: 필드 오류는 TextField error, 저장 오류는 Toast."
+  },
+  {
+    "id": "0012",
+    "title": "결과 무료 층 FreeTier(D-day 히어로·금액 비교)와 LegalNotice",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "src/components/result/FreeTier.tsx를 만든다(data-testid='free-tier'). 구성은 objected 대기 문구, dday-hero(SummaryHero+CountUp), 필요하면 '납부기한 입력' Button, compare-card(Card+ListRow 3개, 범칙금은 1차·2차·즉결심판), 감경 안내 Paragraph다. LegalNotice.tsx에는 고정 법적 고지와 납부처 텍스트 안내를 둔다. FreeTier는 TossRewardAd를 import하지 않는다.",
+      "acceptance_criteria": [
+        "F3-AC-1 고지서를 today '2026-10-09'에 보면 free-tier에 '감경 마감까지 D-11 · 2026.10.20(화)', '32,000원', '40,000원'이 보인다. compare-card는 ListRow 3개이고 Badge '8,000원 절약'이 1개 있다. 이 배지 값은 홈 히어로와 같은 potentialSaving에서 가져온다.",
+        "today '2026-10-21'에 paymentDeadline '2026-11-30'이면 '납부기한까지 D-40 · 2026.11.30(월)'이 보인다. 감경 행에는 '감경 기간이 끝났어요'가 var(--adaptiveGrey400) 색으로 표시된다. 납부기한이 null이면 '납부기한을 입력해 주세요'가 보이고, Button을 누르면 navigate('/notice/<id>/edit',{state:{focus:'paymentDeadline'}})가 호출된다.",
+        "범칙금이면 '1차 납부기한까지 D-6 · 2026.10.15(목)', '1차 기한 안에 40,000원', '2차 기한(2026.11.04)까지 48,000원', '그 뒤엔 즉결심판이 청구돼요 (도로교통법 제165조)'가 보인다.",
+        "모든 기한이 지나면 '납부기한이 지났어요 · D+1 · 2026.11.30(월)'이 보이고 Badge는 0개다. objected면 hero 위에 '의견제출 결과를 기다리는 중이에요. 받아들여지지 않으면 감경 없이 부과될 수 있어요'가 보인다.",
+        "LegalNotice에 '법령의 일반 기준으로 계산한 참고값이에요. 고지서에 적힌 금액과 기한이 우선이에요.'와 '고지서의 가상계좌, 이파인, 위택스에서 낼 수 있어요'가 있다. <a href>는 0개다."
+      ]
+    },
+    "covers": [
+      "F3-AC-1",
+      "F3-AC-2",
+      "F3-AC-3",
+      "F3-AC-4",
+      "F3-AC-5",
+      "F3-AC-6",
+      "F3-AC-9",
+      "F3-AC-10",
+      "F3-AC-14",
+      "F3-AC-15",
+      "F6-AC-3",
+      "F7-AC-1"
+    ],
+    "files": [
+      "src/components/result/FreeTier.tsx",
+      "src/components/result/LegalNotice.tsx",
+      "src/components/result/FreeTier.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest FreeTier 테스트 통과",
+      "FreeTier.tsx에 TossRewardAd import 0건",
+      "HEX 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Screen: 고지서 결과 (/notice/:id) 무료 층 — 블루프린트 본문이 잘려 있으므로 SPEC F3을 기준으로 조립한다.\nTDS·템플릿: SummaryHero(data-testid='dday-hero' 래퍼, 값 CountUp 'D-11', 보조문 '2026.10.20(화)'), Card(data-testid='compare-card') + ListRow 3개(감경 납부액·감경 기한 후·체납 시), Badge(size='small' '8,000원 절약'), Paragraph.Text, Button(variant='weak' '납부기한 입력'), Spacing.\n- 감경 납부액은 t2 타이포로 강조한다.\n- 비활성 행 색은 var(--adaptiveGrey400), 보조 문구 색은 var(--adaptiveGrey600)이다.\n- compare-card 아래 Paragraph.Text: '감경은 의견제출 기한 안에 스스로 납부할 때만 적용돼요 (질서위반행위규제법 제18조)'(감경 마감 전 과태료만).\n- LegalNotice는 결과 화면 하단에 둘 Paragraph.Text(t7, var(--adaptiveGrey600))다.\n- data-testid가 템플릿 컴포넌트에 직접 붙지 않으면 스타일 없는 div로 감싼다.\n- logImpression('result_free_tier')는 페이지(0016)가 호출한다. 이 컴포넌트에서는 호출하지 않는다."
+  },
+  {
+    "id": "0013",
+    "title": "결과 심화 층 ScenarioGate — 월별 가산금 표·범칙금 타임라인(리워드 게이트)",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "src/components/result/ScenarioGate.tsx를 만든다. 심화 층만 <TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID}>로 감싸고, 자식인 locked-tier가 처음 렌더될 때 logImpression('scenario_locked_tier')를 1회 호출한다. FineScenarioTable.tsx에는 scenario-row 8개, 60개월 상한 안내, Sparkline, MiniBar를 둔다. PenaltyTimeline.tsx에는 1차·2차·즉결심판 3행을 둔다. 무료 층은 이 게이트 밖에 둔다.",
+      "acceptance_criteria": [
+        "게이트가 열리면 locked-tier에 '41,680원', '46,960원', '70,000원'이 보이고, locked-tier의 조상에 TossRewardAd가 있다.",
+        "과태료 40000이면 scenario-row ListRow가 8개다. 순서는 SPEC F4-AC-2 원문을 따르고, 첫 두 행은 '납부기한 다음 날 41,200원'과 '1개월 41,680원'이다. 표 아래에 '중가산금은 60개월까지만 붙어요 — 최대 원래 금액의 75% (질서위반행위규제법 제24조)'가 보인다.",
+        "scenario-sparkline의 데이터 점은 61개(month 0~60)다. scenario-minibar 값은 40000/30000이다.",
+        "범칙금 receivedDate '2026-10-05'이면 '~2026.10.15 40,000원', '2026.10.16~2026.11.04 48,000원', '2026.11.05부터 즉결심판 청구 — 금액은 법원이 정해요' 3행이 보인다.",
+        "납부기한이 null이면 행 라벨은 상대 표기이고, '본 고지서의 납부기한을 입력하면 체납 시작일도 보여드려요'와 '납부기한 입력' Button이 보인다. 광고 실패로 즉시 렌더될 때 Toast는 0회, console.error는 0회, impression은 1회다. 광고를 보상 전에 닫으면 locked-tier와 impression이 모두 0이다."
+      ]
+    },
+    "covers": [
+      "F4-AC-1",
+      "F4-AC-2",
+      "F4-AC-3",
+      "F4-AC-4",
+      "F4-AC-5",
+      "F4-AC-6",
+      "F4-AC-7",
+      "F4-AC-9"
+    ],
+    "files": [
+      "src/components/result/ScenarioGate.tsx",
+      "src/components/result/FineScenarioTable.tsx",
+      "src/components/result/PenaltyTimeline.tsx",
+      "src/components/result/ScenarioGate.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest ScenarioGate 테스트 통과(TossRewardAd 모킹)",
+      "템플릿 TossRewardAd를 재설계하지 않고 그대로 사용"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "결과 화면 심화 층 (무료 층 아래 블록 1개, 새 라우트 없음):\n<TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID}>\n  <div data-testid='locked-tier'> … </div>\n</TossRewardAd>\nTDS·템플릿: Paragraph.Text(t4 섹션 제목), ListRow(data-testid='scenario-row') + ListRow.Texts, Sparkline(data-testid='scenario-sparkline'), MiniBar(data-testid='scenario-minibar'), Button(variant='weak' '납부기한 입력' → navigate('/notice/<id>/edit',{state:{focus:'paymentDeadline'}})), Spacing.\n- Sparkline과 MiniBar는 템플릿 제공 여부와 props 이름을 .d.ts로 확인한다. 없으면 생략하고 F4-AC-4는 P2로 남긴다.\n- 게이트 바깥에는 locked-hint(잠금 안내)를 두지 않는다(F4-AC-7: 첫 렌더부터 locked-hint 0개).\n- 보조 문구 색은 var(--adaptiveGrey600)이다. HEX는 쓰지 않는다."
+  },
+  {
+    "id": "0014",
+    "title": "납부·결정 기록 BottomSheet와 기록 동작 훅",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "src/components/result/useRecordActions.ts를 만든다. 시점별 옵션(감경가 납부, 기한 안 납부, 기한 지나 납부, 의견제출, 아직 결정 안 함)과 savedAmount를 엔진으로 계산하고, updateStatus를 호출하며, 성공·실패 Toast와 logClick, requestReviewOnce(감경 납부일 때만)를 처리한다. src/components/result/RecordSheet.tsx에는 '납부·결정 기록' Button과 BottomSheet 옵션 ListRow를 둔다.",
+      "acceptance_criteria": [
+        "F3-AC-1 고지서를 today '2026-10-09'에 기록할 때 '감경가 32,000원으로 납부했어요'를 탭하면 status는 paid_early, savedAmount는 8000이 된다. logClick('mark_paid_early')와 requestReviewOnce()가 각 1회 호출된다.",
+        "today '2026-10-21'(감경 마감 후, 납부기한 전)이면 첫 옵션이 '기한 안에 40,000원 납부했어요'이고 savedAmount는 1200이다. 범칙금 1차 기한 전이면 첫 옵션이 '1차 기한 안에 40,000원 납부했어요'이고 savedAmount는 8000이다.",
+        "today '2026-12-01'(모든 기한 지남)에 기한 지나 납부를 기록하면 Toast '납부를 기록했어요'가 뜨고 logClick('mark_paid_late')가 1회 호출된다. requestReviewOnce는 0회다.",
+        "'의견제출을 했어요'를 탭하면 objected가 되고, '아직 결정 안 했어요'를 탭하면 open/null/0/null로 돌아간다.",
+        "updateStatus가 quota를 반환하면 Toast '저장 공간이 부족해 기록하지 못했어요'가 뜨고 status는 그대로다. unavailable이면 해당 Toast가 뜨고, 성공 후에 하는 requestReviewOnce와 logClick 호출은 0회다."
+      ]
+    },
+    "covers": [
+      "F6-AC-1",
+      "F6-AC-3",
+      "F6-AC-4",
+      "F6-AC-6",
+      "F6-AC-7",
+      "F6-AC-8",
+      "F6-AC-9",
+      "F6-AC-10",
+      "F6-AC-11"
+    ],
+    "files": [
+      "src/components/result/useRecordActions.ts",
+      "src/components/result/RecordSheet.tsx",
+      "src/components/result/RecordSheet.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest RecordSheet 테스트 통과",
+      "옵션 ListRow 터치 영역 44px 이상",
+      "옵션 탭에 tickWeak, 성공 시 success 햅틱"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "TDS: Button(display='block' 또는 width:100% flex 래퍼, '납부·결정 기록'), BottomSheet(제목 '납부·결정 기록') + ListRow 옵션 4개(시점별 문구), Toast(useToast).\n- 옵션 문구 예: '감경가 32,000원으로 납부했어요' / '기한 안에 40,000원 납부했어요' / '1차 기한 안에 40,000원 납부했어요' / '의견제출을 했어요' / '아직 결정 안 했어요'. 시점에 따라 첫 옵션이 바뀐다.\n- 범칙금에는 '의견제출을 했어요' 옵션을 두지 않는다(불변식: 범칙금은 objected 불가).\n- 해요체와 능동형 문구를 쓴다. 이모지는 쓰지 않는다."
+  },
+  {
+    "id": "0015",
+    "title": "[부가] 고지서 삭제 버튼과 확인 다이얼로그",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "[부가] src/components/result/DeleteNoticeButton.tsx를 만든다. '삭제' Button을 누르면 AlertDialog ''<이름>' 고지서를 삭제할까요?'가 뜨고, 버튼은 '삭제'와 '닫기'다. 확인하면 deleteNotice를 호출하고, 성공 시 navigate('/', {replace:true, state:{deletedName}})로 이동한다. 실패하면 messages의 오류 코드별 Toast를 띄운다. 결과 페이지가 이 컴포넌트를 import한다.",
+      "acceptance_criteria": [
+        "'삭제'를 탭하면 AlertDialog ''강남 주정차' 고지서를 삭제할까요?'가 뜨고, 왼쪽 버튼은 '닫기'다.",
+        "'닫기'를 누르면 dialog가 닫히고 deleteNotice 호출은 0회다.",
+        "'삭제'를 확인하면 deleteNotice(id)가 1회 호출되고, 성공 시 navigate('/', {replace:true, state:{deletedName:'강남 주정차'}})가 호출된다.",
+        "deleteNotice가 quota나 unavailable을 반환하면 이동하지 않고 해당 Toast가 1회 뜬다. console.error는 0회다."
+      ]
+    },
+    "covers": [
+      "F6-AC-5",
+      "F6-AC-9"
+    ],
+    "files": [
+      "src/components/result/DeleteNoticeButton.tsx",
+      "src/components/result/DeleteNoticeButton.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest DeleteNoticeButton 테스트 통과",
+      "Dialog 왼쪽 버튼 문구 '닫기'('취소' 0건)"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "TDS: Button(variant='weak', '삭제'), AlertDialog(2버튼: 왼쪽 '닫기', 오른쪽 '삭제'). AlertDialog에 버튼 2개 슬롯이 없으면 BottomSheet + BottomSheet.DoubleCTA로 대체한다. SPEC F6-AC-5의 '취소'는 Toss 라이팅 규칙(Dialog 왼쪽 버튼 '닫기')에 따라 '닫기'로 쓴다."
+  },
+  {
+    "id": "0016",
+    "title": "고지서 결과 페이지(S4) NoticeResult 조립",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "src/pages/NoticeResult.tsx를 조립한다. 구성 순서는 Top(고지서 이름), FreeTier, RecordSheet, ScenarioGate, LegalNotice, ShareButton, DeleteNoticeButton, 최하단 AdSlot이다. 없는 id, corrupted, unavailable, newerVersion이면 StatusState만 보이고 게이트는 띄우지 않는다. src/components/result/ShareButton.tsx는 loading 상태로 연타를 막고, logClick('result_share') 후 shareApp()을 호출한다.",
+      "acceptance_criteria": [
+        "정상 고지서로 진입하면 logImpression('result_free_tier')가 진입당 1회 호출된다(justSaved 유무 무관). free-tier는 TossRewardAd의 자식이 아니다.",
+        "없는 id(/notice/abc)나 corrupted면 '고지서를 찾을 수 없어요'와 '홈으로'가 보인다. '홈으로'를 누르면 navigate('/', {replace:true})다. free-tier, locked-tier, TossRewardAd는 0개다.",
+        "unavailable이면 '저장 공간에 접근할 수 없어요'가, newerVersion이면 '새 버전 앱에서 저장한 데이터가 있어요'가 보인다. 두 impression 로그는 모두 0회다.",
+        "'공유하기'를 탭하면 logClick('result_share')가 1회, shareApp()이 1회 호출된다. 진행 중에는 Button이 loading이라 재탭해도 추가 호출이 없다. 예외나 reject가 나도 throw와 console.error는 0회다.",
+        "AdSlot은 화면 최하단에 1개이고, 고정 높이나 배경 래퍼로 감싸지 않는다."
+      ]
+    },
+    "covers": [
+      "F3-AC-2",
+      "F3-AC-7",
+      "F3-AC-8",
+      "F3-AC-11",
+      "F3-AC-12",
+      "F3-AC-13",
+      "F4-AC-8"
+    ],
+    "files": [
+      "src/components/result/ShareButton.tsx",
+      "src/pages/NoticeResult.tsx",
+      "src/pages/NoticeResult.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest NoticeResult 테스트 통과",
+      "StrictMode에서도 impression 1회",
+      "console.error 0회"
+    ],
+    "depends_on": [
+      "0007",
+      "0012",
+      "0013",
+      "0014",
+      "0015"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Screen: 고지서 결과 (/notice/:id) — 블루프린트 본문이 잘려 있으므로 SPEC S4 기준.\n<ScreenScaffold>\n<Top title={<Top.TitleParagraph>{notice.name}</Top.TitleParagraph>} />\n<FreeTier …/>                      // data-testid='free-tier', 게이트 밖(핵심 답)\n<Spacing size={16} /><RecordSheet …/>\n<Spacing size={24} /><ScenarioGate …/>   // TossRewardAd는 심화 층만\n<Spacing size={24} /><LegalNotice />\n<Spacing size={16} /><ShareButton /> <DeleteNoticeButton …/>\n<Spacing size={24} />\n<AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID} />   // 최하단, 고정 높이·배경 래퍼 금지\n</ScreenScaffold>\n- Button 2개(공유하기·삭제)를 나란히 둘 때만 flex 래퍼를 쓴다.\n- States: Loading 없음(동기 로드). Error/Empty는 StatusState(notFound/unavailable/newer, action '홈으로' → navigate('/', { replace: true })).\n- 공유는 템플릿 shareApp만 쓰고, 외부 URL 이동은 하지 않는다."
+  },
+  {
+    "id": "0017",
+    "title": "[부가] 고지서 수정 페이지(S3) NoticeEdit",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "[부가] src/pages/NoticeEdit.tsx를 만든다. 저장값으로 0010 폼을 프리필하고, Top 제목은 '고지서 수정'이다. 0011의 useNoticeSubmit(id)를 재사용한다. 기록이 있는 고지서에서 금액이나 기한을 바꾸면 RecordResetDialog를 거쳐 open으로 되돌린 뒤 저장한다. state.focus가 'paymentDeadline'이면 해당 필드에 포커스한다. 없는 id, corrupted, unavailable, newer 상태에서는 StatusState를 보인다.",
+      "acceptance_criteria": [
+        "'강남 주정차'로 진입하면 모든 필드가 저장값과 같다. amount를 50000으로 저장하면 같은 id의 amount가 50000이 되고 Toast '고지서를 수정했어요'가 뜬다.",
+        "state.focus='paymentDeadline'이면 document.activeElement가 납부기한 input이다.",
+        "paid_early 고지서에서 이름만 바꾸면 status, paidAmount, savedAmount, decidedAt이 유지된다. amount를 바꾸면 '금액이나 기한을 바꾸면 납부 기록이 초기화돼요' 다이얼로그(왼쪽 '닫기', 오른쪽 '바꾸기')가 뜬다.",
+        "없는 id나 corrupted면 '고지서를 찾을 수 없어요'가, unavailable이면 '저장 공간에 접근할 수 없어요'가, newerVersion이면 '새 버전 앱에서 저장한 데이터가 있어요'가 보인다. 폼은 0개다.",
+        "받은 날을 바꾸지 않으면 2019년 받은 날 데이터도 5년 하한 오류 없이 저장된다."
+      ]
+    },
+    "covers": [
+      "F2-AC-5",
+      "F2-AC-8",
+      "F2-AC-9",
+      "F2-AC-10",
+      "F2-AC-13",
+      "F2-AC-16",
+      "F2-AC-17"
+    ],
+    "files": [
+      "src/components/form/RecordResetDialog.tsx",
+      "src/pages/NoticeEdit.tsx",
+      "src/pages/NoticeEdit.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest NoticeEdit 테스트 통과",
+      "Dialog 왼쪽 버튼 '닫기'"
+    ],
+    "depends_on": [
+      "0007",
+      "0010",
+      "0011"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Screen: 고지서 수정 (/notice/:id/edit) — Pattern: InputForm (FixedBottomCTA). 0011 등록 화면과 같은 구성: ScreenScaffold, Top('고지서 수정'), NoticeFormFields(프리필), SubmitFooter('저장').\n- RecordResetDialog: AlertDialog '금액이나 기한을 바꾸면 납부 기록이 초기화돼요', 버튼 '닫기'/'바꾸기'(SPEC의 '취소'는 Toss 규칙에 따라 '닫기'로 쓴다). 버튼 2개 슬롯이 없으면 BottomSheet.DoubleCTA로 대체한다.\n- 차단 상태는 StatusState(action '홈으로' → navigate('/', { replace: true }))."
+  },
+  {
+    "id": "0018",
+    "title": "[부가] 없는 경로 페이지(S5) NotFound",
+    "epic": "Epic 2. 화면",
+    "task": {
+      "description": "[부가] src/pages/NotFound.tsx를 만든다. ScreenScaffold와 Top('과태료 감경시계') 아래에 StatusState variant='route404'를 두고, '홈으로' Button은 navigate('/', {replace:true})를 호출한다. 라우터 연결은 0019가 한다. 이 패킷은 페이지 컴포넌트와 테스트만 만든다.",
+      "acceptance_criteria": [
+        "렌더하면 Asset.ContentIcon, '페이지를 찾을 수 없어요', '홈으로' Button이 보인다.",
+        "'홈으로'를 탭하면 navigate가 ('/', {replace:true})로 1회 호출된다.",
+        "console.error 0회, HEX 색상 0건이다."
+      ]
+    },
+    "covers": [
+      "F7-AC-7"
+    ],
+    "files": [
+      "src/pages/NotFound.tsx",
+      "src/pages/NotFound.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest NotFound 테스트 통과"
+    ],
+    "depends_on": [
+      "0007"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Screen: 없는 경로 (*) — BlockedState 조립: <Top title={<Top.TitleParagraph>과태료 감경시계</Top.TitleParagraph>} /> + <Asset.ContentIcon …/> <Spacing size={16} /> <EmptyState title='페이지를 찾을 수 없어요' action={<Button variant='weak' size='large'>홈으로</Button>} />. 0007 StatusState variant='route404'를 재사용한다."
+  },
+  {
+    "id": "0019",
+    "title": "라우팅 연결·ErrorBoundary·TodayProvider 배선·빌드 타깃",
+    "epic": "4",
+    "task": {
+      "description": "이 패킷이 진입점의 단일 소유자다. src/App.tsx에서 react-router-dom Routes로 '/'(Home), '/notice/new'(NoticeCreate), '/notice/:id'(NoticeResult), '/notice/:id/edit'(NoticeEdit), '*'(NotFound)를 연결한다. 라우트 전체를 AppErrorBoundary와 TodayProvider로 감싼다. vite.config.ts의 build.target은 ['es2017','safari15']로 둔다. main.tsx는 수정하지 않는다.",
+      "acceptance_criteria": [
+        "/는 Home, /notice/new는 등록 폼, /notice/<id>는 결과, /notice/<id>/edit는 수정 폼, /unknown은 '페이지를 찾을 수 없어요'를 렌더한다.",
+        "/notice/new가 '/notice/:id' 결과 화면으로 잘못 매칭되지 않는다(등록 폼 Top '고지서 등록'이 보인다).",
+        "라우트 하위 컴포넌트가 throw하면 '일시적인 문제가 생겼어요' 화면이 보이고, 앱 전체가 흰 화면이 되지 않는다.",
+        "vite.config.ts build.target이 ['es2017','safari15']이고 npm run build가 성공한다. src/main.tsx diff는 0줄이다."
+      ]
+    },
+    "covers": [
+      "F7-AC-5",
+      "F7-AC-7",
+      "F7-AC-10"
+    ],
+    "files": [
+      "src/App.tsx",
+      "vite.config.ts"
+    ],
+    "definition_of_done": [
+      "npm run build 성공",
+      "src/App.tsx를 files에 둔 패킷은 이 패킷 하나뿐",
+      "하단 FloatingTabBar 미사용(SPEC: 탭 내비 없음)"
+    ],
+    "depends_on": [
+      "0009",
+      "0011",
+      "0016",
+      "0017",
+      "0018"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [
+      "react-router-dom"
+    ],
+    "ui_requirements": "App 골격: <AppErrorBoundary><TodayProvider><Routes> … </Routes></TodayProvider></AppErrorBoundary>. 템플릿에 이미 BrowserRouter 등 전역 Provider가 있으면 그대로 두고 Routes만 채운다. 하단 탭은 쓰지 않는다. 새 UI 요소는 추가하지 않는다."
+  },
+  {
+    "id": "0020",
+    "title": "검수 대응 정적 가드 테스트와 전체 흐름 스모크(최종 폴리시)",
+    "epic": "Epic 3. 통합",
+    "task": {
+      "description": "최종 검수 대응 패킷이다. src/App.tsx와 main.tsx는 건드리지 않는다. src/lib/qualityGuards.test.ts는 src 전체를 읽어 금지 패턴이 0건인지 확인한다. 대상은 외부 이탈, 설치 유도, 외부 분석 SDK, HEX, var(--tds-color-, 호환 불가 API, IAP와 프로모션, AdSlot 고정 높이 래퍼다. src/lib/flowSmoke.test.tsx는 홈 → 등록 → 결과 → 기록 → 삭제 흐름에서 console.error가 0회임을 확인한다. 위반이 나오면 해당 파일 수정 대신 보고 목록에 남긴다.",
+      "acceptance_criteria": [
+        "src/**/*.{ts,tsx,css}에서 window.open(, window.location.href = 'http, <a href=\"http, '앱을 설치', '다운로드', google-analytics, gtag, amplitude, mixpanel이 0건이다.",
+        "정규식 #[0-9a-fA-F]{3,8}\\b 색상 리터럴과 var(--tds-color-가 0건이다(테스트 파일과 테스트 데이터 문자열은 제외 규칙을 명시).",
+        "crypto.randomUUID, structuredClone, findLast, Object.hasOwn, .at( 사용과 TossPurchase, IAP., grantPromotionReward 사용이 0건이다.",
+        "flowSmoke: MemoryRouter로 등록부터 삭제까지 실행하는 동안 console.error spy 호출이 0회다. 마지막에는 홈에서 삭제 Toast가 1회 보인다.",
+        "AdSlot을 감싼 요소에 height, min-height, background 스타일이 0건이다."
+      ]
+    },
+    "covers": [
+      "F7-AC-1",
+      "F7-AC-2",
+      "F7-AC-3",
+      "F7-AC-4",
+      "F7-AC-5",
+      "F7-AC-6",
+      "F7-AC-8",
+      "F7-AC-9"
+    ],
+    "files": [
+      "src/lib/qualityGuards.test.ts",
+      "src/lib/flowSmoke.test.tsx"
+    ],
+    "definition_of_done": [
+      "vitest qualityGuards·flowSmoke 통과",
+      "src/App.tsx, src/main.tsx 미수정"
+    ],
+    "depends_on": [
+      "0019"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "새 UI 없음. 검증 대상 규칙: 터치 영역 44px 이상(Button, ListRow, ChipItem, BottomSheet 옵션은 TDS 기본 크기를 유지하고 높이를 덮어쓰지 않았는지 확인), HEX 금지, 외부 링크 금지, 앱인토스 광고(AdSlot·TossRewardAd)만 사용."
+  }
+]
