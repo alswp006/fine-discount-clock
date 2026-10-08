@@ -237,8 +237,12 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0016: 고지서 결과 페이지(S4) NoticeResult 조립 (files: src/components/result/ShareButton.tsx, src/pages/NoticeResult.tsx, src/pages/NoticeResult.test.tsx)
 - 0017: [부가] 고지서 수정 페이지(S3) NoticeEdit (files: src/components/form/RecordResetDialog.tsx, src/pages/NoticeEdit.tsx, src/pages/NoticeEdit.test.tsx)
 - 0018: [부가] 없는 경로 페이지(S5) NotFound (files: src/pages/NotFound.tsx, src/pages/NotFound.test.tsx)
+- 0019: 라우팅 연결·ErrorBoundary·TodayProvider 배선·빌드 타깃 (files: src/App.tsx, vite.config.ts)
 
 ## Available exports from existing files
+// src/App.tsx
+export default function App() {
+
 // src/components/AdSlot.tsx
 export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
 
@@ -308,9 +312,7 @@ export default RecordResetDialog;
 export function UnbackedSaveDialog({ open, onConfirm, onClose }: UnbackedSaveDialogProps) {
 export default UnbackedSaveDialog;
 
-// src/components/form/useNoticeFormState.ts
-export interface NoticeFormState {
-export f
+// src/components/form/useNoticeFormStat
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 

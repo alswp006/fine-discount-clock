@@ -13,12 +13,8 @@ export interface SaveOptions {
   discardCorrupt?: boolean;
 }
 
+// crypto.randomUUID는 Android 7 WebView에 없어 쓰지 않는다(spec: 호환 불가 API 0건)
 function newId(): string {
-  try {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
-  } catch {
-    // 아래 대체 id를 쓴다
-  }
   return `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
