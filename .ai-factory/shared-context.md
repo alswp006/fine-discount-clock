@@ -47,8 +47,89 @@ export type useTodayFn = () => string;
 
 ## Shared Types Contract (IMPORT these, do NOT redefine)
 ```typescript
-// Domain types — add your app-specific types here
-export {};
+// Domain types — 런타임 값 없음(타입 전용)
+
+/** 법정 구분이라 닫힌 집합 예외: 과태료(질서위반행위규제법) | 범칙금(도로교통법 통고처분) */
+export type NoticeKind = 'fine' | 'penalty';
+
+/** 앱 내부 처리 상태 */
+export type NoticeStatus = 'open' | 'paid_early' | 'paid_late' | 'objected';
+
+/** 등록한 고지서 1장 */
+export interface Notice {
+  id: string;
+  name: string;
+  kind: NoticeKind;
+  amount: number;
+  discountedAmount: number | null;
+  receivedDate: string;
+  opinionDeadline: string | null;
+  paymentDeadline: string | null;
+  status: NoticeStatus;
+  paidAmount: number | null;
+  savedAmount: number;
+  decidedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 입력 폼 → 저장 함수로 넘기는 값 */
+export type NoticeInput = Pick<
+  Notice,
+  'name' | 'kind' | 'amount' | 'discountedAmount' | 'receivedDate' | 'opinionDeadline' | 'paymentDeadline'
+>;
+
+/** 계산 결과 (저장하지 않는 파생값) */
+export interface KeyDeadline {
+  date: string; // 'YYYY-MM-DD'
+  label: '감경 마감' | '납부기한' | '1차 납부기한' | '2차 납부기한';
+  dday: number; // date - today (일)
+}
+
+export interface FineComparison {
+  discounted: number;
+  full: number;
+  overdueFirst: number;
+  saving: number;
+}
+
+/** month 0 = 납부기한 다음 날 */
+export interface FineScenarioRow {
+  month: number;
+  total: number;
+  surcharge: number;
+}
+
+export interface PenaltyStages {
+  firstDeadline: string;
+  firstAmount: number;
+  secondDeadline: string;
+  secondAmount: number;
+}
+
+export interface LoadResult {
+  notices: Notice[];
+  corrupted: boolean;
+  backupFailed: boolean;
+  unavailable: boolean;
+  newerVersion: boolean;
+}
+
+export type StoreError =
+  | 'quota'
+  | 'unavailable'
+  | 'limit'
+  | 'not_found'
+  | 'unbacked'
+  | 'newer_version'
+  | 'invalid';
+
+/** navigate state */
+export interface RouteState {
+  justSaved?: boolean;
+  focus?: 'paymentDeadline';
+  deletedName?: string;
+}
 
 ```
 
@@ -73,6 +154,8 @@ export {};
   hooks/
   lib/
     analytics.ts
+    contract.ts
+    fineRules.ts
     review.ts
     share.ts
     storage.ts
@@ -93,9 +176,12 @@ export {};
 
 ### Exports (src/lib/)
 - analytics.ts: export type LogFields = Record<string, string | number | boolean | null>; export const DWELL_MS = 3000; export function fireAndForget(call: () => unknown): void; export function logScreen(page: string, extra?: LogFields): void; export function logClick(name: string, extra?: LogFields): void; export function logImpression(name: string, extra?: LogFields): void; export function useScreenLog(page: string): void
+- contract.ts: export type StatusVariant = 'notFound' | 'unavailable' | 'newer' | 'route404' | 'renderError'; export type countCharsFn = (s: string) => number; export type isValidYmdFn = (s: string) => boolean; export type addYearsFn = (ymd: string, years: number) => string; export type addDaysFn = (ymd: string, days: number) => string; export type todayYmdFn = () => string; export type formatWonFn = (amount: number) => string; export type formatDateDotFn = (ymd: string) => string
+- fineRules.ts: export const FINE_RULES =; export const PENALTY_RULES =; export const INPUT_LIMITS =
 - review.ts: export function requestReviewOnce(key: string = REVIEW_REQUESTED_KEY): void
 - share.ts: export interface ShareAppOptions; export async function shareApp(opts: ShareAppOptions): Promise<void>
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
+- types.ts: export type NoticeKind = 'fine' | 'penalty'; export type NoticeStatus = 'open' | 'paid_early' | 'paid_late' | 'objected'; export interface Notice; export type NoticeInput = Pick< Notice, 'name' | 'kind' | 'amount' | 'discountedAmount' | 'receivedDate' | 'opinionDeadl; export interface KeyDeadline; export interface FineComparison; export interface FineScenarioRow; export interface PenaltyStages
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
 
 ### Components (src/components/)
@@ -114,6 +200,9 @@ export {};
 - TossPurchase.tsx: TossPurchase
 - TossRewardAd.tsx: TossRewardAd
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
+
+## Already Implemented (do NOT duplicate or overwrite)
+- 0001: 엔티티·결과·RouteState 타입과 법령 기준 상수 (files: src/lib/types.ts, src/lib/fineRules.ts)
 
 ## Available exports from existing files
 // src/App.tsx
