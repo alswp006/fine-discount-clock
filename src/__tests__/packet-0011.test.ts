@@ -13,9 +13,13 @@ import { generateHapticFeedback } from "@apps-in-toss/web-framework";
 import { storeErrorMessage } from "@/lib/messages";
 import type { Notice } from "@/lib/types";
 
-const { saveSpy } = vi.hoisted(() => ({ saveSpy: vi.fn() }));
+const { saveSpy, original } = vi.hoisted(() => ({
+  saveSpy: vi.fn(),
+  original: { save: undefined as undefined | ((...args: unknown[]) => unknown) },
+}));
 vi.mock("@/lib/store/saveNotice", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/store/saveNotice")>();
+  original.save = actual.saveNotice as (...args: unknown[]) => unknown;
   saveSpy.mockImplementation(actual.saveNotice);
   return { ...actual, saveNotice: saveSpy };
 });
@@ -69,7 +73,9 @@ beforeEach(() => {
   mockNavigate.mockClear();
   mockOpenToast.mockClear();
   mockLogClick.mockClear();
-  saveSpy.mockClear();
+  // afterEach의 vi.restoreAllMocks()가 spy의 위임을 지우므로 매번 다시 건다
+  saveSpy.mockReset();
+  saveSpy.mockImplementation(original.save as never);
   vi.mocked(generateHapticFeedback).mockClear();
   errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 });
