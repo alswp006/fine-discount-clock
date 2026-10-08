@@ -226,6 +226,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0012: 결과 무료 층 FreeTier(D-day 히어로·금액 비교)와 LegalNotice (files: src/components/result/FreeTier.tsx, src/components/result/LegalNotice.tsx, src/components/result/FreeTier.test.tsx)
 - 0013: 결과 심화 층 ScenarioGate — 월별 가산금 표·범칙금 타임라인(리워드 게이트) (files: src/components/result/ScenarioGate.tsx, src/components/result/FineScenarioTable.tsx, src/components/result/PenaltyTimeline.tsx, src/components/result/ScenarioGate.test.tsx)
 - 0014: 납부·결정 기록 BottomSheet와 기록 동작 훅 (files: src/components/result/useRecordActions.ts, src/components/result/RecordSheet.tsx, src/components/result/RecordSheet.test.tsx)
+- 0015: [부가] 고지서 삭제 버튼과 확인 다이얼로그 (files: src/components/result/DeleteNoticeButton.tsx, src/components/result/DeleteNoticeButton.test.tsx)
 
 ## Available exports from existing files
 // src/App.tsx
