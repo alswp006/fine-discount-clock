@@ -37,12 +37,12 @@ export default function Home() {
 
   return (
     <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>Fine Discount Clock</Top.TitleParagraph>} />}
+      top={<Top title={<Top.TitleParagraph>과태료 감경시계</Top.TitleParagraph>} />}
     >
       {/* 시각 앵커: 헤드라인 + 카드 내 진입 버튼(부유 금지, display="block" 전체폭).
           데이터 앱이면 value를 <Amount typography="t1" />(핵심 숫자)로 교체하라. */}
       <SummaryHero
-        label="Fine Discount Clock"
+        label="과태료 감경시계"
         value={<Paragraph.Text typography="t2">과태료 고지서 받았다면 감경 마감까지 며칠? 늦으면 얼마 더 붙는지도 계산해요</Paragraph.Text>}
         caption="로그인 없이 바로 쓸 수 있어요"
         action={
