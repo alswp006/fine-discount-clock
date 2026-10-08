@@ -1,4 +1,4 @@
-import { forwardRef, useRef } from 'react';
+import { forwardRef, useRef, useState } from 'react';
 import type { ChangeEvent, FocusEvent, ReactNode } from 'react';
 import { TextField } from '@toss/tds-mobile';
 import { parseAmountInput } from '@/lib/inputRules';
@@ -34,6 +34,8 @@ const AmountField = forwardRef<HTMLInputElement, AmountFieldProps>(function Amou
   ref,
 ) {
   const scrolled = useRef(false);
+  // 모델상 0은 빈 칸과 같다 — 사용자가 직접 친 0은 화면에 남겨 입력이 사라진 것처럼 보이지 않게 한다.
+  const [typedZero, setTypedZero] = useState(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
@@ -47,10 +49,13 @@ const AmountField = forwardRef<HTMLInputElement, AmountFieldProps>(function Amou
         onReject(REJECT_MESSAGE.noDigit);
         return;
       }
+      setTypedZero(false);
       onValueChange(null);
       return;
     }
-    onValueChange(Number(parsed.digits.slice(0, MAX_DIGITS)));
+    const next = Number(parsed.digits.slice(0, MAX_DIGITS));
+    setTypedZero(next === 0);
+    onValueChange(next);
   };
 
   // 키보드가 올라와도 가려지지 않게 처음 포커스될 때 한 번만 화면 안으로 옮긴다.
@@ -74,7 +79,7 @@ const AmountField = forwardRef<HTMLInputElement, AmountFieldProps>(function Amou
       inputMode="numeric"
       enterKeyHint={enterKeyHint}
       suffix="원"
-      value={value === null ? '' : formatNumber(value)}
+      value={value === null ? (typedZero ? '0' : '') : formatNumber(value)}
       hasError={error !== undefined}
       help={error ?? help}
       onChange={handleChange}

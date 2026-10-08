@@ -45,7 +45,7 @@ export function useNoticeSubmit(formState: NoticeFormState, edit?: EditTarget) {
       if (res.ok) {
         openToast(editId === undefined ? CREATED_MESSAGE : UPDATED_MESSAGE);
         const state: RouteState = { justSaved: true };
-        navigate(`/notice/${res.notice.id}`, { state });
+        navigate(`/notice/${res.notice.id}`, { state, replace: true });
         return 'saved';
       }
       if (res.error === 'unbacked') return 'unbacked';
