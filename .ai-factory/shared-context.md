@@ -163,7 +163,9 @@ export interface RouteState {
     format.ts
     inputRules.test.ts
     inputRules.ts
+    noticeSchema.ts
     review.ts
+    schema/
     share.ts
     storage.ts
     types.ts
@@ -190,36 +192,21 @@ export interface RouteState {
 - fineRules.ts: export const FINE_RULES =; export const PENALTY_RULES =; export const INPUT_LIMITS =
 - format.ts: export function formatWon(amount: number): string; export function formatDateDot(ymd: string): string; export function formatDday(days: number): string
 - inputRules.ts: export type AmountParse = |; export function parseAmountInput(raw: string): AmountParse; export function countChars(s: string): number; export function isValidYmd(s: string): boolean; export function addYears(ymd: string, years: number): string
+- noticeSchema.ts: export const CURRENT_SCHEMA_VERSION = 1; export const MAX_CORRUPT_BACKUPS = 3; export const STORAGE_LIMITS =; export interface NoticesData; export interface CorruptBackup; export type NoticeMigrations = Record<number, (data: unknown) => unknown>; export const MIGRATIONS: NoticeMigrations =
 - review.ts: export function requestReviewOnce(key: string = REVIEW_REQUESTED_KEY): void
+- schema/corruptBackup.ts: export type CorruptBackupEntry =; export type CorruptBackupParse =; export function parseCorruptBackup(raw: string | null): CorruptBackupParse
+- schema/validateNotices.ts: export function validateNotices(data: unknown): Notice[] | null
+- schema/versioning.ts: export type VersionVerdict = 'corrupt' | 'migrate' | 'current' | 'newer'; export function classifyVersion(version: unknown, current: number = CURRENT_SCHEMA_VERSION): VersionVerdict; export function migrateNoticesData( data: unknown, fromVersion: number, migrations: NoticeMigrations = MIGRATIONS, toVer; export type StoredDataVerdict = |; export function classifyStoredData(parsed: unknown): StoredDataVerdict
 - share.ts: export interface ShareAppOptions; export async function shareApp(opts: ShareAppOptions): Promise<void>
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
-- types.ts: export type NoticeKind = 'fine' | 'penalty'; export type NoticeStatus = 'open' | 'paid_early' | 'paid_late' | 'objected'; export interface Notice; export type NoticeInput = Pick< Notice, 'name' | 'kind' | 'amount' | 'discountedAmount' | 'receivedDate' | 'opinionDeadl; export interface KeyDeadline; export interface FineComparison; export interface FineScenarioRow; export interface PenaltyStages
-- utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
-
-### Components (src/components/)
-- AdSlot.tsx: AdSlot
-- Amount.tsx: Amount
-- BottomCTA.tsx: SubmitFooter, ButtonStack
-- Card.tsx: Card
-- CountUp.tsx: CountUp
-- FloatingTabBar.tsx: FloatingTabBar
-- MiniBar.tsx: MiniBar
-- PageShell.tsx: PageShell
-- ScreenScaffold.tsx: ScreenScaffold
-- Sparkline.tsx: Sparkline
-- StateView.tsx: EmptyState, LoadingState
-- SummaryHero.tsx: SummaryHero
-- TossPurchase.tsx: TossPurchase
-- TossRewardAd.tsx: TossRewardAd
-
-### Module Dependencies (import graph)
-  lib/format.ts → imports: lib/dateUtils
+- types.ts: export type NoticeKind = 'fine' | 'penalty'; export type NoticeStatus = 'open' | 'paid_early' | 'paid_late' | 'objected'; export interface Notice; export type NoticeInput = Pick< Notice, 'name' | 'k...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 엔티티·결과·RouteState 타입과 법령 기준 상수 (files: src/lib/types.ts, src/lib/fineRules.ts)
 - 0002: 입력 해석·날짜 산술·표시 포맷 순수 함수 (files: src/lib/inputRules.ts, src/lib/inputRules.test.ts, src/lib/dateUtils.ts, src/lib/dateUtils.test.ts, src/lib/format.ts)
 - 0003: 계산 엔진 — 감경·가산금·범칙금 단계·기준 기한 (files: src/lib/engine/amounts.ts, src/lib/engine/deadlines.ts, src/lib/fineEngine.ts, src/lib/engine/amounts.test.ts, src/lib/engine/deadlines.test.ts)
+- 0004: 스키마 검증·버전 판정·마이그레이션·백업 해석 (files: src/lib/schema/validateNotices.ts, src/lib/schema/versioning.ts, src/lib/schema/corruptBackup.ts, src/lib/noticeSchema.ts, src/lib/schema/validateNotices.test.ts)
 
 ## Available exports from existing files
 // src/App.tsx
