@@ -164,7 +164,8 @@ export function NoticeFormFields({ formState, focusRequest }: NoticeFormFieldsPr
         help={errors.paymentDeadline ?? paymentHelp}
         onChange={onText('paymentDeadline')}
       />
-      <Spacing size={16} />
+      {/* 고정 하단 CTA에 마지막 필드가 가리지 않도록 */}
+      <Spacing size={112} />
     </div>
   );
 }

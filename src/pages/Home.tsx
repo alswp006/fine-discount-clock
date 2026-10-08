@@ -77,7 +77,14 @@ export default function Home() {
   return (
     <ScreenScaffold top={top} bottom={<SubmitFooter label="고지서 등록" onClick={addNotice} />}>
       {isEmpty ? (
-        <>
+        <div
+          style={{
+            minHeight: 'calc(100dvh - 240px)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}
+        >
           <EmptyState
             title="받은 고지서를 등록해 보세요"
             description="감경 마감과 늦으면 붙는 금액을 계산해 드려요"
@@ -89,7 +96,7 @@ export default function Home() {
               </Paragraph.Text>
             </div>
           ) : null}
-        </>
+        </div>
       ) : (
         <>
           <SavingsHero hero={hero} />
