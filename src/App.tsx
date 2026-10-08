@@ -6,6 +6,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import NoticeCreate from './pages/NoticeCreate';
+import NoticeEdit from './pages/NoticeEdit';
 import NoticeResult from './pages/NoticeResult';
 import NotFound from './pages/NotFound';
 
@@ -23,6 +24,7 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/notice/new" element={<NoticeCreate />} />
       <Route path="/notice/:id" element={<NoticeResult />} />
+      <Route path="/notice/:id/edit" element={<NoticeEdit />} />
       <Route path="*" element={<NotFound />} />
       {DevTdsGallery && (
         <Route
