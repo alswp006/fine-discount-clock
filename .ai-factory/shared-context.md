@@ -139,6 +139,8 @@ export interface RouteState {
   components/
     AdSlot.tsx
     Amount.tsx
+    AppErrorBoundary.test.tsx
+    AppErrorBoundary.tsx
     BottomCTA.tsx
     Card.tsx
     CountUp.tsx
@@ -148,6 +150,7 @@ export interface RouteState {
     ScreenScaffold.tsx
     Sparkline.tsx
     StateView.tsx
+    StatusState.tsx
     SummaryHero.tsx
     TossPurchase.tsx
     TossRewardAd.tsx
@@ -206,7 +209,7 @@ export interface RouteState {
 - routeState.ts: export function readRouteState(raw: unknown): RouteState
 - schema/corruptBackup.ts: export type CorruptBackupEntry =; export type CorruptBackupParse =; export function parseCorruptBackup(raw: string | null): CorruptBackupParse
 - schema/validateNotices.ts: export function validateNotices(data: unknown): Notice[] | null
-- schema/versioning.ts: export type VersionVerdict = 'corrupt' | 'migrate' | 'current' | 'newer'; export function classifyVersion(version: unknown, current: number = CURRENT_SCHEMA_VERSION): VersionVerdict; export function m...
+- schema/versioning.ts: export type VersionVerdict = 'corrupt' | 'migrate' | 'current' | 'newer'; export function classifyVersion(version: unknown, c...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -216,6 +219,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0004: 스키마 검증·버전 판정·마이그레이션·백업 해석 (files: src/lib/schema/validateNotices.ts, src/lib/schema/versioning.ts, src/lib/schema/corruptBackup.ts, src/lib/noticeSchema.ts, src/lib/schema/validateNotices.test.ts)
 - 0005: localStorage 저장소 — loadNotices·saveNotice·updateStatus·deleteNotice (files: src/lib/store/storageCore.ts, src/lib/store/loadNotices.ts, src/lib/store/saveNotice.ts, src/lib/store/mutateNotice.ts, src/lib/noticeStore.ts)
 - 0006: 데이터 훅 useNotices·TodayContext·화면 공용 파생값·문구 맵 (files: src/lib/useNotices.ts, src/lib/TodayContext.tsx, src/lib/noticeSelectors.ts, src/lib/messages.ts, src/lib/routeState.ts)
+- 0007: 공용 차단 상태 화면(StatusState)과 렌더 오류 ErrorBoundary (files: src/components/StatusState.tsx, src/components/AppErrorBoundary.tsx, src/components/AppErrorBoundary.test.tsx)
 
 ## Available exports from existing files
 // src/App.tsx
@@ -226,6 +230,9 @@ export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
 
 // src/components/Amount.tsx
 export function Amount({
+
+// src/components/AppErrorBoundary.tsx
+export default class AppErrorBoundary extends Component<{ children?: ReactNode }, State> {
 
 // src/components/BottomCTA.tsx
 export function SubmitFooter({
@@ -257,6 +264,9 @@ export function Sparkline({
 export function EmptyState({
 export function LoadingState({
 
+// src/components/StatusState.tsx
+export default function StatusState({
+
 // src/components/SummaryHero.tsx
 export function SummaryHero({
 
@@ -281,11 +291,7 @@ export function logImpression(name: string, extra?: LogFields): void {
 export function useScreenLog(page: string): void {
 
 // src/lib/contract.ts
-export type StatusVariant = 'notFound' | 'unavailable' | 'newer' | 'route404' | 'renderError';
-export type countCharsFn = (s: string) => number;
-export type isValidYmdFn = (s: string) => boolean;
-export type addYearsFn = (ymd: string, years: number) => string;
-export type
+export type StatusVariant = 'notFound' | 'unavailable' | 'newer' | '
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 
