@@ -154,6 +154,7 @@ export interface RouteState {
     SummaryHero.tsx
     TossPurchase.tsx
     TossRewardAd.tsx
+    form/
     home/
   hooks/
   lib/
@@ -169,6 +170,8 @@ export interface RouteState {
     inputRules.test.ts
     inputRules.ts
     messages.ts
+    noticeFormValidation.test.ts
+    noticeFormValidation.ts
     noticeSchema.ts
     noticeSelectors.ts
     noticeStore.ts
@@ -204,13 +207,9 @@ export interface RouteState {
 - format.ts: export function formatWon(amount: number): string; export function formatDateDot(ymd: string): string; export function formatDday(days: number): string
 - inputRules.ts: export type AmountParse = |; export function parseAmountInput(raw: string): AmountParse; export function countChars(s: string): number; export function isValidYmd(s: string): boolean; export function addYears(ymd: string, years: number): string
 - messages.ts: export function storeErrorMessage(error: StoreError): string
+- noticeFormValidation.ts: export interface NoticeFormValues; export type NoticeFieldKey = | 'name' | 'amount' | 'discountedAmount' | 'receivedDate' | 'opinionDeadline' | 'paymentDea; export type NoticeFormErrors = Partial<Record<NoticeFieldKey, string>>; export interface NoticeFormValidation; export const FIELD_ORDER: readonly NoticeFieldKey[] = [ 'name', 'amount', 'discountedAmount', 'receivedDate', 'opinionDe; export interface ValidateOptions; export function validateNoticeForm( values: NoticeFormValues, today: string, mode: 'create' | 'edit', options: ValidateO; export function toNoticeInput(values: NoticeFormValues): NoticeInput
 - noticeSchema.ts: export const CURRENT_SCHEMA_VERSION = 1; export const MAX_CORRUPT_BACKUPS = 3; export const STORAGE_LIMITS =; export interface NoticesData; export interface CorruptBackup; export type NoticeMigrations = Record<number, (data: unknown) => unknown>; export const MIGRATIONS: NoticeMigrations =
-- noticeSelectors.ts: export type OpenBadge = '마감 임박' | '기한 지남' | null; export interface OpenCard; export interface SavingsHero; export interface DecidedRow; export interface DecidedSection; export function buildOpenCards(notices: Notice[], today: string): OpenCard[]; export function buildSavingsHero(notices: Notice[], today: string): SavingsHero | null; export function buildDecidedSection(notices: Notice[]): DecidedSection
-- review.ts: export function requestReviewOnce(key: string = REVIEW_REQUESTED_KEY): void
-- routeState.ts: export function readRouteState(raw: unknown): RouteState
-- schema/corruptBackup.ts: export type CorruptBackupEntry =; export type CorruptBackupParse =; export function parseCorruptBackup(raw: string | null): CorruptBackupParse
-- schema/validateNotices.ts: export function validateNotices(data: unknown): Notice[] | null
-- schema/versioning.ts: export type VersionVerdict = 'corrupt' | 'migrate' | 'current' | 'newer'; export function classifyVersion(version: ...
+- noticeSelectors.ts: export type OpenBadge = '마감 임박' | '기한 지남' | null; export interface OpenCard; export interface SavingsHero; export interface DecidedRow; export interface DecidedSection; export function buildOpenCards(notices: Notice[], today: string): OpenCard[]; export func...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -222,6 +221,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0006: 데이터 훅 useNotices·TodayContext·화면 공용 파생값·문구 맵 (files: src/lib/useNotices.ts, src/lib/TodayContext.tsx, src/lib/noticeSelectors.ts, src/lib/messages.ts, src/lib/routeState.ts)
 - 0007: 공용 차단 상태 화면(StatusState)과 렌더 오류 ErrorBoundary (files: src/components/StatusState.tsx, src/components/AppErrorBoundary.tsx, src/components/AppErrorBoundary.test.tsx)
 - 0008: 홈 컴포넌트 — 아끼는 돈 히어로·고지서 카드·미결정 목록·등록 동작 (files: src/components/home/SavingsHero.tsx, src/components/home/NoticeCard.tsx, src/components/home/OpenNoticesSection.tsx, src/components/home/useAddNotice.ts, src/components/home/OpenNoticesSection.test.tsx)
+- 0010: 고지서 입력 폼 — 검증 순수 함수·폼 상태·금액 필드·필드 묶음 (files: src/lib/noticeFormValidation.ts, src/lib/noticeFormValidation.test.ts, src/components/form/useNoticeFormState.ts, src/components/form/AmountField.tsx, src/components/form/NoticeFormFields.tsx)
 
 ## Available exports from existing files
 // src/App.tsx
@@ -279,26 +279,25 @@ export function TossPurchase({
 // src/components/TossRewardAd.tsx
 export function TossRewardAd({
 
+// src/components/form/AmountField.tsx
+export default AmountField;
+export { AmountField };
+
+// src/components/form/NoticeFormFields.tsx
+export interface FocusRequest {
+export function NoticeFormFields({ formState, focusRequest }: NoticeFormFieldsProps) {
+export default NoticeFormFields;
+
+// src/components/form/useNoticeFormState.ts
+export interface NoticeFormState {
+export function useNoticeFormState(initial?: NoticeInput): NoticeFormState {
+
 // src/components/home/NoticeCard.tsx
 export function NoticeCard({ card }: { card: OpenCard }) {
 export default NoticeCard;
 
 // src/components/home/OpenNoticesSection.tsx
-export function OpenNoticesSection({ cards }: { cards: OpenCard[] }) {
-export default OpenNoticesSection;
-
-// src/components/home/SavingsHero.tsx
-export function SavingsHero({ hero }: { hero: SavingsHeroData | null }) {
-export default SavingsHero;
-
-// src/components/home/useAddNotice.ts
-export function useAddNotice(noticeCount: number): () => void {
-
-// src/lib/TodayContext.tsx
-export function TodayProvider({ value, children }: TodayProviderProps) {
-export function useToday(): string {
-
-// src/lib
+export function OpenNoticesSection({ cards }: { cards: 
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 
