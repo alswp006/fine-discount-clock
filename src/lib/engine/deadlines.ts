@@ -13,7 +13,7 @@ function listDeadlines(notice: Notice, today: string): KeyDeadline[] {
     return [make(stages.firstDeadline, '1차 납부기한'), make(stages.secondDeadline, '2차 납부기한')];
   }
   const list: KeyDeadline[] = [];
-  if (notice.opinionDeadline) list.push(make(notice.opinionDeadline, '감경 마감'));
+  if (notice.opinionDeadline && notice.status !== 'objected') list.push(make(notice.opinionDeadline, '감경 마감'));
   if (notice.paymentDeadline) list.push(make(notice.paymentDeadline, '납부기한'));
   return list;
 }
@@ -35,6 +35,12 @@ interface DueSnapshot {
 }
 
 function dueSnapshot(notice: Notice, today: string): DueSnapshot {
+  if ((notice.status === 'paid_early' || notice.status === 'paid_late') && notice.paidAmount != null) {
+    return { due: notice.paidAmount, saving: 0 };
+  }
+  if (notice.kind === 'fine' && notice.status === 'objected') {
+    return { due: calcFineComparison(notice).full, saving: 0 };
+  }
   if (notice.kind === 'penalty') {
     const s = calcPenaltyStages(notice);
     if (calcDday(s.firstDeadline, today) >= 0) {
