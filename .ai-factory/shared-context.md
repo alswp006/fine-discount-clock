@@ -154,6 +154,7 @@ export interface RouteState {
     SummaryHero.tsx
     TossPurchase.tsx
     TossRewardAd.tsx
+    home/
   hooks/
   lib/
     TodayContext.tsx
@@ -209,7 +210,7 @@ export interface RouteState {
 - routeState.ts: export function readRouteState(raw: unknown): RouteState
 - schema/corruptBackup.ts: export type CorruptBackupEntry =; export type CorruptBackupParse =; export function parseCorruptBackup(raw: string | null): CorruptBackupParse
 - schema/validateNotices.ts: export function validateNotices(data: unknown): Notice[] | null
-- schema/versioning.ts: export type VersionVerdict = 'corrupt' | 'migrate' | 'current' | 'newer'; export function classifyVersion(version: unknown, c...
+- schema/versioning.ts: export type VersionVerdict = 'corrupt' | 'migrate' | 'current' | 'newer'; export function classifyVersion(version: ...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -220,6 +221,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0005: localStorage 저장소 — loadNotices·saveNotice·updateStatus·deleteNotice (files: src/lib/store/storageCore.ts, src/lib/store/loadNotices.ts, src/lib/store/saveNotice.ts, src/lib/store/mutateNotice.ts, src/lib/noticeStore.ts)
 - 0006: 데이터 훅 useNotices·TodayContext·화면 공용 파생값·문구 맵 (files: src/lib/useNotices.ts, src/lib/TodayContext.tsx, src/lib/noticeSelectors.ts, src/lib/messages.ts, src/lib/routeState.ts)
 - 0007: 공용 차단 상태 화면(StatusState)과 렌더 오류 ErrorBoundary (files: src/components/StatusState.tsx, src/components/AppErrorBoundary.tsx, src/components/AppErrorBoundary.test.tsx)
+- 0008: 홈 컴포넌트 — 아끼는 돈 히어로·고지서 카드·미결정 목록·등록 동작 (files: src/components/home/SavingsHero.tsx, src/components/home/NoticeCard.tsx, src/components/home/OpenNoticesSection.tsx, src/components/home/useAddNotice.ts, src/components/home/OpenNoticesSection.test.tsx)
 
 ## Available exports from existing files
 // src/App.tsx
@@ -277,21 +279,26 @@ export function TossPurchase({
 // src/components/TossRewardAd.tsx
 export function TossRewardAd({
 
+// src/components/home/NoticeCard.tsx
+export function NoticeCard({ card }: { card: OpenCard }) {
+export default NoticeCard;
+
+// src/components/home/OpenNoticesSection.tsx
+export function OpenNoticesSection({ cards }: { cards: OpenCard[] }) {
+export default OpenNoticesSection;
+
+// src/components/home/SavingsHero.tsx
+export function SavingsHero({ hero }: { hero: SavingsHeroData | null }) {
+export default SavingsHero;
+
+// src/components/home/useAddNotice.ts
+export function useAddNotice(noticeCount: number): () => void {
+
 // src/lib/TodayContext.tsx
 export function TodayProvider({ value, children }: TodayProviderProps) {
 export function useToday(): string {
 
-// src/lib/analytics.ts
-export type LogFields = Record<string, string | number | boolean | null>;
-export const DWELL_MS = 3000;
-export function fireAndForget(call: () => unknown): void {
-export function logScreen(page: string, extra?: LogFields): void {
-export function logClick(name: string, extra?: LogFields): void {
-export function logImpression(name: string, extra?: LogFields): void {
-export function useScreenLog(page: string): void {
-
-// src/lib/contract.ts
-export type StatusVariant = 'notFound' | 'unavailable' | 'newer' | '
+// src/lib
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 
