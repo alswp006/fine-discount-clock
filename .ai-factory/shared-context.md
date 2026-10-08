@@ -224,6 +224,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0008: 홈 컴포넌트 — 아끼는 돈 히어로·고지서 카드·미결정 목록·등록 동작 (files: src/components/home/SavingsHero.tsx, src/components/home/NoticeCard.tsx, src/components/home/OpenNoticesSection.tsx, src/components/home/useAddNotice.ts, src/components/home/OpenNoticesSection.test.tsx)
 - 0010: 고지서 입력 폼 — 검증 순수 함수·폼 상태·금액 필드·필드 묶음 (files: src/lib/noticeFormValidation.ts, src/lib/noticeFormValidation.test.ts, src/components/form/useNoticeFormState.ts, src/components/form/AmountField.tsx, src/components/form/NoticeFormFields.tsx)
 - 0012: 결과 무료 층 FreeTier(D-day 히어로·금액 비교)와 LegalNotice (files: src/components/result/FreeTier.tsx, src/components/result/LegalNotice.tsx, src/components/result/FreeTier.test.tsx)
+- 0013: 결과 심화 층 ScenarioGate — 월별 가산금 표·범칙금 타임라인(리워드 게이트) (files: src/components/result/ScenarioGate.tsx, src/components/result/FineScenarioTable.tsx, src/components/result/PenaltyTimeline.tsx, src/components/result/ScenarioGate.test.tsx)
 
 ## Available exports from existing files
 // src/App.tsx
