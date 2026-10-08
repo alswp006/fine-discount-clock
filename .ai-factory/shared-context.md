@@ -155,7 +155,12 @@ export interface RouteState {
   lib/
     analytics.ts
     contract.ts
+    dateUtils.test.ts
+    dateUtils.ts
     fineRules.ts
+    format.ts
+    inputRules.test.ts
+    inputRules.ts
     review.ts
     share.ts
     storage.ts
@@ -177,7 +182,10 @@ export interface RouteState {
 ### Exports (src/lib/)
 - analytics.ts: export type LogFields = Record<string, string | number | boolean | null>; export const DWELL_MS = 3000; export function fireAndForget(call: () => unknown): void; export function logScreen(page: string, extra?: LogFields): void; export function logClick(name: string, extra?: LogFields): void; export function logImpression(name: string, extra?: LogFields): void; export function useScreenLog(page: string): void
 - contract.ts: export type StatusVariant = 'notFound' | 'unavailable' | 'newer' | 'route404' | 'renderError'; export type countCharsFn = (s: string) => number; export type isValidYmdFn = (s: string) => boolean; export type addYearsFn = (ymd: string, years: number) => string; export type addDaysFn = (ymd: string, days: number) => string; export type todayYmdFn = () => string; export type formatWonFn = (amount: number) => string; export type formatDateDotFn = (ymd: string) => string
+- dateUtils.ts: export function ymdToDayNumber(ymd: string): number; export function addDays(ymd: string, days: number): string; export function diffDays(a: string, b: string): number; export function todayYmd(): string
 - fineRules.ts: export const FINE_RULES =; export const PENALTY_RULES =; export const INPUT_LIMITS =
+- format.ts: export function formatWon(amount: number): string; export function formatDateDot(ymd: string): string; export function formatDday(days: number): string
+- inputRules.ts: export type AmountParse = |; export function parseAmountInput(raw: string): AmountParse; export function countChars(s: string): number; export function isValidYmd(s: string): boolean; export function addYears(ymd: string, years: number): string
 - review.ts: export function requestReviewOnce(key: string = REVIEW_REQUESTED_KEY): void
 - share.ts: export interface ShareAppOptions; export async function shareApp(opts: ShareAppOptions): Promise<void>
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
@@ -199,10 +207,14 @@ export interface RouteState {
 - SummaryHero.tsx: SummaryHero
 - TossPurchase.tsx: TossPurchase
 - TossRewardAd.tsx: TossRewardAd
+
+### Module Dependencies (import graph)
+  lib/format.ts → imports: lib/dateUtils
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 엔티티·결과·RouteState 타입과 법령 기준 상수 (files: src/lib/types.ts, src/lib/fineRules.ts)
+- 0002: 입력 해석·날짜 산술·표시 포맷 순수 함수 (files: src/lib/inputRules.ts, src/lib/inputRules.test.ts, src/lib/dateUtils.ts, src/lib/dateUtils.test.ts, src/lib/format.ts)
 
 ## Available exports from existing files
 // src/App.tsx
