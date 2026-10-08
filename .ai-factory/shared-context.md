@@ -153,6 +153,7 @@ export interface RouteState {
     TossRewardAd.tsx
   hooks/
   lib/
+    TodayContext.tsx
     analytics.ts
     contract.ts
     dateUtils.test.ts
@@ -163,14 +164,18 @@ export interface RouteState {
     format.ts
     inputRules.test.ts
     inputRules.ts
+    messages.ts
     noticeSchema.ts
+    noticeSelectors.ts
     noticeStore.ts
     review.ts
+    routeState.ts
     schema/
     share.ts
     storage.ts
     store/
     types.ts
+    useNotices.ts
     utils.ts
   main.tsx
   pages/
@@ -194,14 +199,14 @@ export interface RouteState {
 - fineRules.ts: export const FINE_RULES =; export const PENALTY_RULES =; export const INPUT_LIMITS =
 - format.ts: export function formatWon(amount: number): string; export function formatDateDot(ymd: string): string; export function formatDday(days: number): string
 - inputRules.ts: export type AmountParse = |; export function parseAmountInput(raw: string): AmountParse; export function countChars(s: string): number; export function isValidYmd(s: string): boolean; export function addYears(ymd: string, years: number): string
+- messages.ts: export function storeErrorMessage(error: StoreError): string
 - noticeSchema.ts: export const CURRENT_SCHEMA_VERSION = 1; export const MAX_CORRUPT_BACKUPS = 3; export const STORAGE_LIMITS =; export interface NoticesData; export interface CorruptBackup; export type NoticeMigrations = Record<number, (data: unknown) => unknown>; export const MIGRATIONS: NoticeMigrations =
+- noticeSelectors.ts: export type OpenBadge = '마감 임박' | '기한 지남' | null; export interface OpenCard; export interface SavingsHero; export interface DecidedRow; export interface DecidedSection; export function buildOpenCards(notices: Notice[], today: string): OpenCard[]; export function buildSavingsHero(notices: Notice[], today: string): SavingsHero | null; export function buildDecidedSection(notices: Notice[]): DecidedSection
 - review.ts: export function requestReviewOnce(key: string = REVIEW_REQUESTED_KEY): void
+- routeState.ts: export function readRouteState(raw: unknown): RouteState
 - schema/corruptBackup.ts: export type CorruptBackupEntry =; export type CorruptBackupParse =; export function parseCorruptBackup(raw: string | null): CorruptBackupParse
 - schema/validateNotices.ts: export function validateNotices(data: unknown): Notice[] | null
-- schema/versioning.ts: export type VersionVerdict = 'corrupt' | 'migrate' | 'current' | 'newer'; export function classifyVersion(version: unknown, current: number = CURRENT_SCHEMA_VERSION): VersionVerdict; export function migrateNoticesData( data: unknown, fromVersion: number, migrations: NoticeMigrations = MIGRATIONS, toVer; export type StoredDataVerdict = |; export function classifyStoredData(parsed: unknown): StoredDataVerdict
-- share.ts: export interface ShareAppOptions; export async function shareApp(opts: ShareAppOptions): Promise<void>
-- storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
-- store/loadNotices.ts: export type StoreState = |; export function readStoreState(): StoreState; export function isBackedUp(raw: string): boolean; export function loadNotices(): L...
+- schema/versioning.ts: export type VersionVerdict = 'corrupt' | 'migrate' | 'current' | 'newer'; export function classifyVersion(version: unknown, current: number = CURRENT_SCHEMA_VERSION): VersionVerdict; export function m...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -210,6 +215,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0003: 계산 엔진 — 감경·가산금·범칙금 단계·기준 기한 (files: src/lib/engine/amounts.ts, src/lib/engine/deadlines.ts, src/lib/fineEngine.ts, src/lib/engine/amounts.test.ts, src/lib/engine/deadlines.test.ts)
 - 0004: 스키마 검증·버전 판정·마이그레이션·백업 해석 (files: src/lib/schema/validateNotices.ts, src/lib/schema/versioning.ts, src/lib/schema/corruptBackup.ts, src/lib/noticeSchema.ts, src/lib/schema/validateNotices.test.ts)
 - 0005: localStorage 저장소 — loadNotices·saveNotice·updateStatus·deleteNotice (files: src/lib/store/storageCore.ts, src/lib/store/loadNotices.ts, src/lib/store/saveNotice.ts, src/lib/store/mutateNotice.ts, src/lib/noticeStore.ts)
+- 0006: 데이터 훅 useNotices·TodayContext·화면 공용 파생값·문구 맵 (files: src/lib/useNotices.ts, src/lib/TodayContext.tsx, src/lib/noticeSelectors.ts, src/lib/messages.ts, src/lib/routeState.ts)
 
 ## Available exports from existing files
 // src/App.tsx
@@ -261,6 +267,10 @@ export function TossPurchase({
 // src/components/TossRewardAd.tsx
 export function TossRewardAd({
 
+// src/lib/TodayContext.tsx
+export function TodayProvider({ value, children }: TodayProviderProps) {
+export function useToday(): string {
+
 // src/lib/analytics.ts
 export type LogFields = Record<string, string | number | boolean | null>;
 export const DWELL_MS = 3000;
@@ -275,9 +285,7 @@ export type StatusVariant = 'notFound' | 'unavailable' | 'newer' | 'route404' | 
 export type countCharsFn = (s: string) => number;
 export type isValidYmdFn = (s: string) => boolean;
 export type addYearsFn = (ymd: string, years: number) => string;
-export type addDaysFn = (ymd: string, days: number) => string;
-export type todayYmdFn = () => string;
-export type formatWonFn = (amount: number) => st
+export type
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 
